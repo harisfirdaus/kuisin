@@ -597,8 +597,14 @@ const AdminDashboard = () => {
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis 
                         dataKey="quizTitle" 
-                        tick={false}
-                        height={40}
+                        angle={-45}
+                        textAnchor="end"
+                        height={100}
+                        interval={0}
+                        tick={{
+                          fontSize: 12,
+                          fill: '#000000'
+                        }}
                       />
                       <YAxis />
                       <Tooltip 
@@ -608,8 +614,8 @@ const AdminDashboard = () => {
                             const data = payload[0].payload;
                             return (
                               <div className="neo-card bg-white border-2 border-black p-3 shadow-lg">
-                                <p className="font-medium text-sm md:text-base mb-1">{data.quizTitle}</p>
-                                <p className="text-sm md:text-base">{data.jumlahPeserta} Peserta</p>
+                                <p className="font-medium text-sm md:text-base mb-1">Kuis: {data.quizTitle}</p>
+                                <p className="text-sm md:text-base">Jumlah Peserta: {data.jumlahPeserta}</p>
                               </div>
                             );
                           }
