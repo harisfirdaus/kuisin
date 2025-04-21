@@ -595,10 +595,32 @@ const AdminDashboard = () => {
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={participantsStats}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="quizTitle" />
+                      <XAxis 
+                        dataKey="quizTitle" 
+                        tick={false}
+                        height={40}
+                      />
                       <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="jumlahPeserta" fill="#8884d8" />
+                      <Tooltip 
+                        cursor={{ fill: 'rgba(136, 132, 216, 0.1)' }}
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            return (
+                              <div className="neo-card bg-white border-2 border-black p-3 shadow-lg">
+                                <p className="font-medium text-sm md:text-base mb-1">{data.quizTitle}</p>
+                                <p className="text-sm md:text-base">{data.jumlahPeserta} Peserta</p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Bar 
+                        dataKey="jumlahPeserta" 
+                        fill="#8884d8"
+                        radius={[4, 4, 0, 0]}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
