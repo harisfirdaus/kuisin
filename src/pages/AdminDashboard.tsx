@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
@@ -16,7 +16,8 @@ import {
   Loader2,
   Download,
   ChevronRight,
-  ChevronDown
+  ChevronDown,
+  Menu
 } from "lucide-react";
 import { 
   getQuizzes, 
@@ -65,6 +66,9 @@ const AdminDashboard = () => {
   const [selectedParticipant, setSelectedParticipant] = useState<string | null>(null);
   const [participantDetails, setParticipantDetails] = useState<any>(null);
   const [loadingParticipantDetails, setLoadingParticipantDetails] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const toggleButtonRef = useRef<HTMLButtonElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const adminSession = localStorage.getItem('adminSession');
@@ -76,6 +80,24 @@ const AdminDashboard = () => {
     }
     fetchQuizzes();
   }, [navigate]);
+  
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        sidebarRef.current && 
+        !sidebarRef.current.contains(event.target as Node) &&
+        toggleButtonRef.current &&
+        !toggleButtonRef.current.contains(event.target as Node)
+      ) {
+        setIsSidebarOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
   
   const fetchQuizzes = async () => {
     try {
@@ -240,10 +262,24 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-neo-lightgray flex">
-      <div className="w-64 bg-white border-r-4 border-black flex flex-col">
+      {/* Sidebar Toggle Button */}
+      <button
+        ref={toggleButtonRef}
+        className="fixed top-4 left-4 p-2 bg-white border-2 border-black z-20 md:static md:top-auto md:left-auto"
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+      >
+        <Menu size={24} />
+      </button>
+
+      {/* Sidebar */}
+      <div 
+        ref={sidebarRef}
+        className={`fixed md:relative inset-y-0 left-0 w-64 bg-white border-r-4 border-black flex flex-col transform transition-transform duration-300 ease-in-out z-10 
+          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
+      >
         <div className="p-4 border-b-4 border-black">
           <button type="button" onClick={goHome} className="text-2xl font-bold hover:text-neo-blue transition-colors">
-            Kuisin.
+            Kuisin
           </button>
           <p className="text-sm">Admin Dashboard</p>
         </div>
@@ -251,9 +287,11 @@ const AdminDashboard = () => {
           <ul className="space-y-2">
             <li>
               <button
-                onClick={() => setActiveTab("quizzes")}
-                className={`w-full text-left p-3 flex items-center gap-3 border-4 border-black ${activeTab === "quizzes" ? "bg-neo-blue text-white" : "bg-white hover:bg-gray-100"
-                  }`}
+                onClick={() => {
+                  setActiveTab("quizzes");
+                  setIsSidebarOpen(false);
+                }}
+                className={`w-full text-left p-3 flex items-center gap-3 border-4 border-black ${activeTab === "quizzes" ? "bg-neo-blue text-white" : "bg-white hover:bg-gray-100"}`}
               >
                 <List size={20} />
                 <span>Kuis</span>
@@ -261,9 +299,11 @@ const AdminDashboard = () => {
             </li>
             <li>
               <button
-                onClick={() => setActiveTab("stats")}
-                className={`w-full text-left p-3 flex items-center gap-3 border-4 border-black ${activeTab === "stats" ? "bg-neo-blue text-white" : "bg-white hover:bg-gray-100"
-                  }`}
+                onClick={() => {
+                  setActiveTab("stats");
+                  setIsSidebarOpen(false);
+                }}
+                className={`w-full text-left p-3 flex items-center gap-3 border-4 border-black ${activeTab === "stats" ? "bg-neo-blue text-white" : "bg-white hover:bg-gray-100"}`}
               >
                 <BarChartIcon size={20} />
                 <span>Statistik</span>
@@ -271,9 +311,11 @@ const AdminDashboard = () => {
             </li>
             <li>
               <button
-                onClick={() => setActiveTab("participants")}
-                className={`w-full text-left p-3 flex items-center gap-3 border-4 border-black ${activeTab === "participants" ? "bg-neo-blue text-white" : "bg-white hover:bg-gray-100"
-                  }`}
+                onClick={() => {
+                  setActiveTab("participants");
+                  setIsSidebarOpen(false);
+                }}
+                className={`w-full text-left p-3 flex items-center gap-3 border-4 border-black ${activeTab === "participants" ? "bg-neo-blue text-white" : "bg-white hover:bg-gray-100"}`}
               >
                 <Users size={20} />
                 <span>Peserta</span>
@@ -281,9 +323,11 @@ const AdminDashboard = () => {
             </li>
             <li>
               <button
-                onClick={() => setActiveTab("archived")}
-                className={`w-full text-left p-3 flex items-center gap-3 border-4 border-black ${activeTab === "archived" ? "bg-neo-blue text-white" : "bg-white hover:bg-gray-100"
-                  }`}
+                onClick={() => {
+                  setActiveTab("archived");
+                  setIsSidebarOpen(false);
+                }}
+                className={`w-full text-left p-3 flex items-center gap-3 border-4 border-black ${activeTab === "archived" ? "bg-neo-blue text-white" : "bg-white hover:bg-gray-100"}`}
               >
                 <Archive size={20} />
                 <span>Arsip</span>
@@ -291,9 +335,11 @@ const AdminDashboard = () => {
             </li>
             <li>
               <button
-                onClick={() => setActiveTab("settings")}
-                className={`w-full text-left p-3 flex items-center gap-3 border-4 border-black ${activeTab === "settings" ? "bg-neo-blue text-white" : "bg-white hover:bg-gray-100"
-                  }`}
+                onClick={() => {
+                  setActiveTab("settings");
+                  setIsSidebarOpen(false);
+                }}
+                className={`w-full text-left p-3 flex items-center gap-3 border-4 border-black ${activeTab === "settings" ? "bg-neo-blue text-white" : "bg-white hover:bg-gray-100"}`}
               >
                 <Settings size={20} />
                 <span>Pengaturan</span>
@@ -312,8 +358,9 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col">
-        <header className="bg-white p-4 border-b-4 border-black flex justify-between items-center">
+      {/* Main Content */}
+      <div className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${isSidebarOpen ? 'md:ml-64' : 'md:ml-0'}`}>
+        <header className="bg-white p-4 border-b-4 border-black flex justify-between items-center ml-12 md:ml-0">
           <h2 className="text-xl font-bold">
             {activeTab === "quizzes" && "Daftar Kuis"}
             {activeTab === "stats" && "Statistik"}
@@ -330,15 +377,15 @@ const AdminDashboard = () => {
           )}
         </header>
 
-        <main className="flex-1 p-6 overflow-auto">
+        <main className="flex-1 p-4 md:p-6 overflow-auto">
           {activeTab === "quizzes" && (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {loading ? (
                 <div className="flex justify-center items-center h-64">
                   <Loader2 size={40} className="animate-spin text-neo-blue" />
                 </div>
               ) : quizzes.length === 0 ? (
-                <div className="neo-card p-6 text-center">
+                <div className="neo-card p-4 md:p-6 text-center">
                   <p className="text-lg mb-4">Belum ada kuis yang dibuat</p>
                   <Link to="/admin/quiz/create" className="neo-button inline-flex items-center gap-2">
                     <Plus size={18} />
@@ -346,13 +393,13 @@ const AdminDashboard = () => {
                   </Link>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 gap-6">
+                <div className="grid grid-cols-1 gap-4">
                   {quizzes.map((quiz) => {
                     const stat = quizStats.find((s) => s.quizId === quiz.id);
                     return (
                       <div
                         key={quiz.id}
-                        className="neo-card p-6 flex flex-col md:flex-row gap-4 justify-between"
+                        className="neo-card p-4 md:p-6 flex flex-col gap-4"
                       >
                         <div>
                           <div className="flex items-center gap-2 mb-2">
@@ -362,7 +409,7 @@ const AdminDashboard = () => {
                             </span>
                           </div>
                           <p className="mb-4">Kode: <span className="font-bold">{quiz.code}</span></p>
-                          <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                             <div>Nilai Default: <span className="font-bold">{quiz.default_points}</span></div>
                             <div>Soal: <span className="font-bold">{stat?.numQuestions ?? 0}</span></div>
                             <div>Peserta: <span className="font-bold">{stat?.numParticipants ?? 0}</span></div>
@@ -370,7 +417,7 @@ const AdminDashboard = () => {
                             <div>Dibuat: <span className="font-bold">{new Date(quiz.created_at).toLocaleDateString("id-ID")}</span></div>
                           </div>
                         </div>
-                        <div className="flex flex-wrap md:flex-col gap-2 md:justify-center">
+                        <div className="flex flex-wrap gap-2">
                           <Link
                             to={`/admin/quiz/${quiz.id}`}
                             className="neo-button-secondary py-2 px-4 text-sm"
@@ -562,33 +609,70 @@ const AdminDashboard = () => {
           {activeTab === "participants" && (
             <div className="neo-card p-6">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold mb-4">Daftar Peserta</h3>
+                <h3 className="text-xl font-bold">Daftar Peserta</h3>
                 <Button onClick={handleDownloadParticipantsCSV} className="flex items-center gap-2">
                   <Download size={16} />
                   Unduh Semua Data CSV
                 </Button>
               </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Kuis</TableHead>
-                    <TableHead>Nama</TableHead>
-                    <TableHead>Skor</TableHead>
-                    <TableHead>Waktu</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {participantsStats.map((stat) => (
-                    <TableRow key={stat.quizId}>
-                      <TableCell>{stat.quizTitle}</TableCell>
-                      <TableCell>{stat.jumlahPeserta}</TableCell>
-                      <TableCell>{stat.skor}</TableCell>
-                      <TableCell>{stat.waktu ?? '-'}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              
+
+              <div className="space-y-6">
+                {quizzes.map((quiz) => {
+                  const stat = quizStats.find((s) => s.quizId === quiz.id);
+                  const participants = stat?.leaderboard || [];
+                  
+                  return (
+                    <div key={quiz.id} className="neo-card p-4">
+                      <div className="flex justify-between items-center mb-4">
+                        <h4 className="text-lg font-bold">{quiz.title}</h4>
+                        <span className="text-sm text-gray-600">
+                          Total Peserta: {participants.length}
+                        </span>
+                      </div>
+                      
+                      <div className="max-h-[300px] overflow-y-auto border-4 border-black">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Nama</TableHead>
+                              <TableHead>Skor</TableHead>
+                              <TableHead>Waktu</TableHead>
+                              <TableHead>Aksi</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {participants.map((participant) => (
+                              <TableRow key={participant.id}>
+                                <TableCell>{participant.name}</TableCell>
+                                <TableCell>{participant.score}</TableCell>
+                                <TableCell>{participant.completion_time ?? '-'}</TableCell>
+                                <TableCell>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleViewParticipantDetails(participant.id, quiz.id)}
+                                    className="text-xs"
+                                  >
+                                    Lihat Detail
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                            {participants.length === 0 && (
+                              <TableRow>
+                                <TableCell colSpan={4} className="text-center py-4">
+                                  Belum ada peserta
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
               {selectedParticipant && participantDetails && (
                 <div className="mt-8 border-t-4 border-black pt-6">
                   <h4 className="text-lg font-bold mb-4">
