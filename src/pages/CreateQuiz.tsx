@@ -1,6 +1,5 @@
-
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,81 +10,151 @@ import {
   Check, 
   X, 
   Clock,
-  Save
+  Save,
+  Loader2
 } from "lucide-react";
+import { createQuiz, getQuiz, updateQuiz, createQuestion, updateQuestion, deleteQuestion } from "@/lib/api";
+import { useToast } from "@/components/ui/use-toast";
+
+type Question = {
+  id?: string;
+  quiz_id?: string;
+  question_text: string;
+  media_url: string;
+  options: {
+    text: string;
+    id: string;
+  }[];
+  correct_option: number;
+  points: number;
+  time_limit?: number;
+};
 
 const CreateQuiz = () => {
   const navigate = useNavigate();
+  const { quizId } = useParams();
+  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Quiz basic info
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [timePerQuestion, setTimePerQuestion] = useState("30");
+  const [defaultPoints, setDefaultPoints] = useState("10");
   
   // Questions
-  const [questions, setQuestions] = useState([
+  const [questions, setQuestions] = useState<Question[]>([
     {
-      id: "q1",
-      text: "",
-      image: "",
+      question_text: "",
+      media_url: "",
       options: [
-        { id: "o1", text: "", isCorrect: false },
-        { id: "o2", text: "", isCorrect: false },
-        { id: "o3", text: "", isCorrect: false },
-        { id: "o4", text: "", isCorrect: false },
+        { id: "o1", text: "" },
+        { id: "o2", text: "" },
+        { id: "o3", text: "" },
+        { id: "o4", text: "" },
       ],
-      points: "10"
+      correct_option: 0,
+      points: 10
     }
   ]);
 
+  // Check if admin is logged in
+  useEffect(() => {
+    const adminSession = localStorage.getItem('adminSession');
+    if (!adminSession) {
+      navigate('/admin/login');
+      return;
+    }
+    
+    // If editing an existing quiz
+    if (quizId) {
+      fetchQuiz();
+    }
+  }, [navigate, quizId]);
+  
+  const fetchQuiz = async () => {
+    try {
+      setIsLoading(true);
+      const response = await getQuiz(quizId!);
+      const quiz = response.data;
+      
+      // Set quiz basic info
+      setTitle(quiz.title);
+      setDescription(quiz.description || "");
+      setTimePerQuestion(String(quiz.duration_per_question));
+      setDefaultPoints(String(quiz.default_points));
+      
+      // Set questions if any
+      if (quiz.questions && quiz.questions.length > 0) {
+        setQuestions(quiz.questions.map((q: any) => ({
+          id: q.id,
+          quiz_id: q.quiz_id,
+          question_text: q.question_text,
+          media_url: q.media_url || "",
+          options: JSON.parse(q.options),
+          correct_option: q.correct_option,
+          points: q.points,
+          time_limit: q.time_limit
+        })));
+      }
+    } catch (error) {
+      console.error("Error fetching quiz:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Gagal mendapatkan data kuis. Silakan coba lagi.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const addQuestion = () => {
-    const newQuestionId = `q${questions.length + 1}`;
     setQuestions([
       ...questions,
       {
-        id: newQuestionId,
-        text: "",
-        image: "",
+        question_text: "",
+        media_url: "",
         options: [
-          { id: `${newQuestionId}_o1`, text: "", isCorrect: false },
-          { id: `${newQuestionId}_o2`, text: "", isCorrect: false },
-          { id: `${newQuestionId}_o3`, text: "", isCorrect: false },
-          { id: `${newQuestionId}_o4`, text: "", isCorrect: false },
+          { id: `o1`, text: "" },
+          { id: `o2`, text: "" },
+          { id: `o3`, text: "" },
+          { id: `o4`, text: "" },
         ],
-        points: "10"
+        correct_option: 0,
+        points: parseInt(defaultPoints)
       }
     ]);
   };
 
-  const removeQuestion = (questionId: string) => {
+  const removeQuestion = (index: number) => {
     if (questions.length > 1) {
-      setQuestions(questions.filter(q => q.id !== questionId));
+      setQuestions(questions.filter((_, i) => i !== index));
     }
   };
 
-  const updateQuestion = (questionId: string, field: string, value: string) => {
-    setQuestions(questions.map(q => 
-      q.id === questionId ? { ...q, [field]: value } : q
+  const updateQuestionField = (index: number, field: keyof Question, value: any) => {
+    setQuestions(questions.map((q, i) => 
+      i === index ? { ...q, [field]: value } : q
     ));
   };
 
-  const updateOption = (questionId: string, optionId: string, field: string, value: any) => {
-    setQuestions(questions.map(q => {
-      if (q.id === questionId) {
-        return {
-          ...q,
-          options: q.options.map(o => {
-            // If updating isCorrect and setting it to true, make sure other options are set to false
-            if (field === "isCorrect" && value === true) {
-              return o.id === optionId ? { ...o, isCorrect: true } : { ...o, isCorrect: false };
-            }
-            return o.id === optionId ? { ...o, [field]: value } : o;
-          })
-        };
+  const updateOptionText = (qIndex: number, oIndex: number, text: string) => {
+    setQuestions(questions.map((q, i) => {
+      if (i === qIndex) {
+        const updatedOptions = [...q.options];
+        updatedOptions[oIndex] = { ...updatedOptions[oIndex], text };
+        return { ...q, options: updatedOptions };
       }
       return q;
     }));
+  };
+  
+  const setCorrectOption = (qIndex: number, oIndex: number) => {
+    setQuestions(questions.map((q, i) => 
+      i === qIndex ? { ...q, correct_option: oIndex } : q
+    ));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -94,49 +163,151 @@ const CreateQuiz = () => {
     
     // Validate form
     if (!title) {
-      alert("Judul kuis harus diisi");
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Judul kuis harus diisi",
+      });
       setIsSubmitting(false);
       return;
     }
     
     // Validate questions
-    for (const question of questions) {
-      if (!question.text) {
-        alert("Semua pertanyaan harus diisi");
+    for (const [index, question] of questions.entries()) {
+      if (!question.question_text) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: `Pertanyaan ${index + 1} harus diisi`,
+        });
         setIsSubmitting(false);
         return;
       }
       
-      const hasCorrectOption = question.options.some(o => o.isCorrect);
       const allOptionsHaveText = question.options.every(o => o.text.trim() !== "");
       
-      if (!hasCorrectOption) {
-        alert("Setiap pertanyaan harus memiliki jawaban yang benar");
-        setIsSubmitting(false);
-        return;
-      }
-      
       if (!allOptionsHaveText) {
-        alert("Semua opsi jawaban harus diisi");
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: `Semua opsi jawaban di pertanyaan ${index + 1} harus diisi`,
+        });
         setIsSubmitting(false);
         return;
       }
     }
     
-    // In a real app, we would send this data to Supabase via Edge Functions
-    // For demo, we'll just simulate a successful creation
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Get admin user ID
+      const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}');
       
-      // Simulate successful submission and redirect
-      navigate("/admin/dashboard", { state: { quizCreated: true } });
+      if (!adminUser.id) {
+        throw new Error("User ID tidak ditemukan. Silakan login kembali.");
+      }
+      
+      let savedQuizId = quizId;
+      
+      // If it's a new quiz, create it
+      if (!quizId) {
+        const quizData = {
+          title,
+          description,
+          duration_per_question: parseInt(timePerQuestion),
+          default_points: parseInt(defaultPoints),
+        };
+        
+        const response = await createQuiz(quizData, adminUser.id);
+        savedQuizId = response.data[0].id;
+      } else {
+        // Otherwise update the existing quiz
+        const quizData = {
+          title,
+          description,
+          duration_per_question: parseInt(timePerQuestion),
+          default_points: parseInt(defaultPoints),
+        };
+        
+        await updateQuiz(quizId, quizData);
+      }
+      
+      // Now handle questions
+      for (const question of questions) {
+        const questionData = {
+          question_text: question.question_text,
+          media_url: question.media_url,
+          options: JSON.stringify(question.options),
+          correct_option: question.correct_option,
+          points: question.points,
+          time_limit: parseInt(timePerQuestion)
+        };
+        
+        if (question.id) {
+          // Update existing question
+          await updateQuestion(question.id, questionData);
+        } else {
+          // Create new question
+          await createQuestion(savedQuizId!, questionData);
+        }
+      }
+      
+      // If editing and some questions were removed, they need to be deleted
+      if (quizId) {
+        const originalQuiz = await getQuiz(quizId);
+        const originalQuestions = originalQuiz.data.questions || [];
+        
+        // Find questions that exist in original but not in current state
+        const currentQuestionIds = questions
+          .filter(q => q.id) // Only consider questions with IDs
+          .map(q => q.id);
+          
+        for (const origQuestion of originalQuestions) {
+          if (!currentQuestionIds.includes(origQuestion.id)) {
+            await deleteQuestion(origQuestion.id);
+          }
+        }
+      }
+      
+      toast({
+        title: quizId ? "Kuis Diperbarui" : "Kuis Dibuat",
+        description: quizId 
+          ? "Kuis berhasil diperbarui." 
+          : "Kuis baru berhasil dibuat.",
+      });
+      
+      // Redirect to admin dashboard
+      navigate("/admin/dashboard");
     } catch (error) {
-      console.error("Error creating quiz:", error);
-      alert("Gagal membuat kuis. Silakan coba lagi.");
+      console.error("Error saving quiz:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Gagal menyimpan kuis. Silakan coba lagi.",
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-neo-lightgray flex flex-col">
+        <nav className="neo-navbar flex justify-between items-center">
+          <div className="text-2xl font-bold">Kuisin.</div>
+          <Link to="/admin/dashboard" className="font-medium flex items-center gap-2 hover:text-neo-blue transition-colors">
+            <ArrowLeft size={20} />
+            Kembali ke Dashboard
+          </Link>
+        </nav>
+        
+        <div className="flex-1 flex justify-center items-center">
+          <div className="text-center">
+            <Loader2 size={50} className="animate-spin mb-4 mx-auto text-neo-blue" />
+            <p className="text-xl">Memuat data kuis...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-neo-lightgray flex flex-col">
@@ -150,7 +321,7 @@ const CreateQuiz = () => {
       
       <div className="container mx-auto py-8 px-4">
         <div className="neo-card mb-8">
-          <h1 className="text-3xl font-bold mb-6">Buat Kuis Baru</h1>
+          <h1 className="text-3xl font-bold mb-6">{quizId ? 'Edit Kuis' : 'Buat Kuis Baru'}</h1>
           
           <form onSubmit={handleSubmit}>
             <div className="space-y-8">
@@ -181,22 +352,45 @@ const CreateQuiz = () => {
                   />
                 </div>
                 
-                <div className="space-y-2 max-w-xs">
-                  <label htmlFor="timePerQuestion" className="block font-bold">Waktu per Pertanyaan (detik)</label>
-                  <div className="flex items-center">
-                    <Clock className="mr-2" size={20} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label htmlFor="timePerQuestion" className="block font-bold">Waktu per Pertanyaan (detik)</label>
+                    <div className="flex items-center">
+                      <Clock className="mr-2" size={20} />
+                      <Input
+                        id="timePerQuestion"
+                        type="number"
+                        value={timePerQuestion}
+                        onChange={(e) => setTimePerQuestion(e.target.value)}
+                        className="neo-input w-full"
+                        min="5"
+                        max="120"
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label htmlFor="defaultPoints" className="block font-bold">Nilai Default</label>
                     <Input
-                      id="timePerQuestion"
+                      id="defaultPoints"
                       type="number"
-                      value={timePerQuestion}
-                      onChange={(e) => setTimePerQuestion(e.target.value)}
+                      value={defaultPoints}
+                      onChange={(e) => setDefaultPoints(e.target.value)}
                       className="neo-input w-full"
-                      min="5"
-                      max="120"
+                      min="1"
+                      max="100"
                       required
                     />
                   </div>
                 </div>
+                
+                {quizId && (
+                  <div className="mt-4 p-3 bg-gray-100 border-4 border-black">
+                    <p className="font-bold">Kode Kuis: <span className="text-neo-blue">{quizId}</span></p>
+                    <p className="text-sm mt-1">Peserta akan menggunakan kode ini untuk bergabung ke kuis.</p>
+                  </div>
+                )}
               </div>
               
               {/* Questions Section */}
@@ -214,12 +408,12 @@ const CreateQuiz = () => {
                 </div>
                 
                 {questions.map((question, qIndex) => (
-                  <div key={question.id} className="p-6 border-4 border-black bg-white">
+                  <div key={qIndex} className="p-6 border-4 border-black bg-white">
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="text-lg font-bold">Pertanyaan {qIndex + 1}</h3>
                       <Button 
                         type="button"
-                        onClick={() => removeQuestion(question.id)}
+                        onClick={() => removeQuestion(qIndex)}
                         className="p-2 bg-neo-red text-white border-2 border-black"
                         disabled={questions.length === 1}
                       >
@@ -229,11 +423,11 @@ const CreateQuiz = () => {
                     
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <label htmlFor={`q-${question.id}`} className="block font-bold">Teks Pertanyaan</label>
+                        <label htmlFor={`q-${qIndex}`} className="block font-bold">Teks Pertanyaan</label>
                         <Textarea
-                          id={`q-${question.id}`}
-                          value={question.text}
-                          onChange={(e) => updateQuestion(question.id, "text", e.target.value)}
+                          id={`q-${qIndex}`}
+                          value={question.question_text}
+                          onChange={(e) => updateQuestionField(qIndex, "question_text", e.target.value)}
                           className="neo-input w-full"
                           placeholder="Masukkan pertanyaan"
                           required
@@ -241,37 +435,37 @@ const CreateQuiz = () => {
                       </div>
                       
                       <div className="space-y-2">
-                        <label htmlFor={`img-${question.id}`} className="block font-bold">URL Gambar (Opsional)</label>
+                        <label htmlFor={`img-${qIndex}`} className="block font-bold">URL Gambar (Opsional)</label>
                         <Input
-                          id={`img-${question.id}`}
-                          value={question.image}
-                          onChange={(e) => updateQuestion(question.id, "image", e.target.value)}
+                          id={`img-${qIndex}`}
+                          value={question.media_url}
+                          onChange={(e) => updateQuestionField(qIndex, "media_url", e.target.value)}
                           className="neo-input w-full"
                           placeholder="https://example.com/image.jpg"
                         />
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {question.options.map((option) => (
+                        {question.options.map((option, oIndex) => (
                           <div key={option.id} className="space-y-2">
                             <div className="flex items-center gap-2">
-                              <label htmlFor={`opt-${option.id}`} className="font-bold">Opsi {option.id.split("_").pop()}</label>
+                              <label htmlFor={`opt-${qIndex}-${oIndex}`} className="font-bold">Opsi {oIndex + 1}</label>
                               <button
                                 type="button"
-                                onClick={() => updateOption(question.id, option.id, "isCorrect", true)}
+                                onClick={() => setCorrectOption(qIndex, oIndex)}
                                 className={`ml-auto p-1 border-2 border-black ${
-                                  option.isCorrect 
+                                  question.correct_option === oIndex 
                                     ? "bg-green-500 text-white" 
                                     : "bg-white hover:bg-gray-100"
                                 }`}
                               >
-                                {option.isCorrect ? <Check size={16} /> : <X size={16} />}
+                                {question.correct_option === oIndex ? <Check size={16} /> : <X size={16} />}
                               </button>
                             </div>
                             <Input
-                              id={`opt-${option.id}`}
+                              id={`opt-${qIndex}-${oIndex}`}
                               value={option.text}
-                              onChange={(e) => updateOption(question.id, option.id, "text", e.target.value)}
+                              onChange={(e) => updateOptionText(qIndex, oIndex, e.target.value)}
                               className="neo-input w-full"
                               placeholder="Teks pilihan jawaban"
                               required
@@ -281,12 +475,12 @@ const CreateQuiz = () => {
                       </div>
                       
                       <div className="max-w-xs">
-                        <label htmlFor={`points-${question.id}`} className="block font-bold">Nilai Poin</label>
+                        <label htmlFor={`points-${qIndex}`} className="block font-bold">Nilai Poin</label>
                         <Input
-                          id={`points-${question.id}`}
+                          id={`points-${qIndex}`}
                           type="number"
                           value={question.points}
-                          onChange={(e) => updateQuestion(question.id, "points", e.target.value)}
+                          onChange={(e) => updateQuestionField(qIndex, "points", parseInt(e.target.value))}
                           className="neo-input w-full"
                           min="1"
                           max="100"
@@ -310,8 +504,17 @@ const CreateQuiz = () => {
                   className="neo-button flex items-center gap-2"
                   disabled={isSubmitting}
                 >
-                  <Save size={18} />
-                  {isSubmitting ? "Menyimpan..." : "Simpan Kuis"}
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      <span>Menyimpan...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save size={18} />
+                      <span>Simpan Kuis</span>
+                    </>
+                  )}
                 </Button>
               </div>
             </div>

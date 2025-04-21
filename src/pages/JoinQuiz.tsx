@@ -1,25 +1,43 @@
 
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, AlertCircle, Loader2 } from "lucide-react";
+import { joinQuiz } from "@/lib/api";
+import { useToast } from "@/components/ui/use-toast";
 
 const JoinQuiz = () => {
   const [name, setName] = useState("");
   const [quizCode, setQuizCode] = useState("");
-  const [isJoining, setIsJoining] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const handleJoinQuiz = (e: React.FormEvent) => {
+  const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsJoining(true);
+    setIsLoading(true);
+    setError("");
     
-    // In a real application, this would connect to Supabase via Edge Functions
-    // For now, we'll simulate a join flow
-    setTimeout(() => {
-      // Redirect to the quiz page (this would be handled with proper routing in the full implementation)
-      window.location.href = `/quiz/${quizCode}?name=${encodeURIComponent(name)}`;
-    }, 1500);
+    try {
+      const result = await joinQuiz(quizCode.toUpperCase(), name);
+      
+      // Store participant info in local storage
+      localStorage.setItem('participant', JSON.stringify({
+        id: result.data[0].id,
+        name,
+        quizId: result.data[0].quiz_id
+      }));
+      
+      // Redirect to quiz play page
+      navigate(`/quiz/${result.data[0].quiz_id}?name=${encodeURIComponent(name)}`);
+    } catch (err: any) {
+      console.error("Error joining quiz:", err);
+      setError(err.message || "Gagal bergabung ke kuis. Silakan periksa kode kuis dan coba lagi.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -34,11 +52,19 @@ const JoinQuiz = () => {
       
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="neo-card w-full max-w-md">
-          <h1 className="text-3xl font-bold mb-6">Gabung Kuis</h1>
+          <h1 className="text-3xl font-bold mb-2">Ikuti Kuis</h1>
+          <p className="mb-6">Masukkan nama dan kode kuis untuk mulai bermain</p>
           
-          <form onSubmit={handleJoinQuiz} className="space-y-6">
+          {error && (
+            <div className="bg-neo-red/10 border-4 border-neo-red text-neo-red p-3 mb-4 flex items-start gap-2">
+              <AlertCircle size={20} className="shrink-0 mt-0.5" />
+              <p>{error}</p>
+            </div>
+          )}
+          
+          <form onSubmit={handleJoin} className="space-y-6">
             <div className="space-y-2">
-              <label htmlFor="name" className="block font-bold">Nama Anda</label>
+              <label htmlFor="name" className="block font-bold">Nama</label>
               <Input
                 id="name"
                 value={name}
@@ -54,9 +80,10 @@ const JoinQuiz = () => {
               <Input
                 id="quizCode"
                 value={quizCode}
-                onChange={(e) => setQuizCode(e.target.value)}
-                className="neo-input w-full"
+                onChange={(e) => setQuizCode(e.target.value.toUpperCase())}
+                className="neo-input w-full uppercase"
                 placeholder="Masukkan kode kuis"
+                maxLength={8}
                 required
               />
             </div>
@@ -64,9 +91,16 @@ const JoinQuiz = () => {
             <Button
               type="submit"
               className="neo-button w-full"
-              disabled={isJoining}
+              disabled={isLoading}
             >
-              {isJoining ? "Menghubungkan..." : "Gabung Kuis"}
+              {isLoading ? (
+                <>
+                  <Loader2 size={20} className="animate-spin mr-2" />
+                  <span>Menghubungkan...</span>
+                </>
+              ) : (
+                "Mulai Kuis"
+              )}
             </Button>
           </form>
         </div>

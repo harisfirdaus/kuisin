@@ -2,36 +2,42 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, AlertCircle } from "lucide-react";
+import { loginAdmin } from "@/lib/api";
+import { useToast } from "@/components/ui/use-toast";
 
 const AdminLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
     
-    // In a real application, this would connect to Supabase via Edge Functions
-    // For now, we'll simulate a login with a timeout and redirect
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const result = await loginAdmin(email, password);
       
-      // In a real app, we would authenticate with Supabase here
-      // For demo purposes, allow any login with an email and password length > 6
-      if (password.length < 6) {
-        throw new Error("Password minimal 6 karakter");
-      }
+      // Store the user and session in local storage
+      localStorage.setItem('adminUser', JSON.stringify(result.data.user));
+      localStorage.setItem('adminSession', JSON.stringify(result.data.session));
+      
+      // Notify user of successful login
+      toast({
+        title: "Login Berhasil",
+        description: "Selamat datang di dashboard admin.",
+      });
       
       // Redirect to admin dashboard
-      window.location.href = "/admin/dashboard";
+      navigate("/admin/dashboard");
     } catch (err: any) {
-      setError(err.message || "Login gagal. Silakan coba lagi.");
+      console.error("Login failed:", err);
+      setError("Login gagal. Silakan periksa email dan password Anda.");
     } finally {
       setIsLoading(false);
     }
