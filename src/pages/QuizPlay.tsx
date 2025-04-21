@@ -153,15 +153,15 @@ const QuizPlay = () => {
         answerData
       );
       
-      setScore(response.newScore);
+      setScore(response.data.newScore);
       
       setAnswers([
         ...answers,
         {
           questionId: currentQuestion.id,
           optionId: optionIndex,
-          isCorrect: response.isCorrect,
-          points: response.pointsEarned
+          isCorrect: response.data.answer[0].is_correct,
+          points: response.data.pointsEarned
         }
       ]);
       
@@ -352,7 +352,7 @@ const QuizPlay = () => {
               <div className="text-center p-6 mb-6 border-4 border-black bg-white">
                 <h2 className="text-2xl font-bold mb-2">Skor Akhir</h2>
                 <p className="text-5xl font-bold text-neo-blue">{score}</p>
-                <p className="mt-2">Peringkat: #{playerRank} dari {leaderboard.length + 1} peserta</p>
+                <p className="mt-2">Peringkat: #{playerRank} dari {leaderboard.length} peserta</p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
