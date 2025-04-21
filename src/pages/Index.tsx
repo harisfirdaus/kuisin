@@ -113,6 +113,65 @@ const Index = () => {
         </div>
       )}
       
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 bg-white z-50">
+          <div className="p-4">
+            <div className="flex justify-between items-center mb-4">
+              <div className="text-2xl font-bold">Kuisin</div>
+              <button onClick={() => setIsMobileMenuOpen(false)}>✕</button>
+            </div>
+            <div className="flex flex-col space-y-4">
+              <Link 
+                to="/join" 
+                className="neo-button w-full flex items-center justify-center"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Ikuti Kuis
+              </Link>
+              <Link 
+                to="/waitlist" 
+                className="neo-button w-full flex items-center justify-center"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Buat Kuis
+              </Link>
+              {isAdminLoggedIn ? (
+                <>
+                  <Link 
+                    to="/admin/dashboard" 
+                    className="neo-button w-full flex items-center justify-center gap-2"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <LayoutDashboard size={20} />
+                    Dashboard
+                  </Link>
+                  <button 
+                    onClick={() => {
+                      handleLogout();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="neo-button w-full flex items-center justify-center gap-2"
+                  >
+                    <LogOut size={20} />
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <Link 
+                  to="/admin/login" 
+                  className="neo-button w-full flex items-center justify-center gap-2"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <LogIn size={20} />
+                  Login Admin
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-16 md:py-24">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">

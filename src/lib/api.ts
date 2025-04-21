@@ -212,23 +212,19 @@ export const getAnswers = async (participantId: string) => {
 // Add new function to get participant answers
 export const getParticipantAnswers = async (participantId: string, quizId?: string) => {
   try {
-    const response = await fetch(`https://ohphgvzaxvmtjyaiqdaw.supabase.co/functions/v1/answers`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    const response = await supabase.functions.invoke('answers', {
+      body: { 
         action: 'participantDetails',
         participantId,
         quizId
-      }),
+      }
     });
-    
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
+
+    if (response.error) {
+      throw new Error(response.error.message);
     }
-    
-    return await response.json();
+
+    return response.data;
   } catch (error) {
     throw error;
   }
