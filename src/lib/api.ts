@@ -198,15 +198,32 @@ export const getLeaderboard = async (quizId: string) => {
 
 // Answer management
 export const submitAnswer = async (participantId: string, questionId: string, answerData: any) => {
-  const response = await supabase.functions.invoke('answers', {
-    body: { action: 'submit', participantId, questionId, answerData },
-  });
+  try {
+    const response = await supabase.functions.invoke('answers', {
+      body: { 
+        action: 'submit', 
+        participantId, 
+        questionId, 
+        answerData 
+      },
+    });
 
-  if (response.error) {
-    throw new Error(response.error.message);
+    if (response.error) {
+      throw new Error(response.error.message);
+    }
+
+    if (!response.data.success) {
+      throw new Error(response.data.error || 'Gagal mengirim jawaban');
+    }
+
+    return response.data;
+  } catch (error: any) {
+    console.error('Error in submitAnswer:', error);
+    if (error.message.includes('Edge Function returned a non-2xx status code')) {
+      throw new Error('Gagal terhubung ke server. Silakan coba lagi.');
+    }
+    throw error;
   }
-
-  return response.data;
 };
 
 export const getAnswers = async (participantId: string) => {

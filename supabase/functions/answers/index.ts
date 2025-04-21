@@ -90,32 +90,151 @@ serve(async (req) => {
     }
 
     if (action === 'submit') {
-      if (!participantId || !questionId || !answerData) {
-        throw new Error('Missing required fields')
-      }
+      try {
+        console.log('Submit answer request:', { participantId, questionId, answerData });
 
-      const { data, error } = await supabaseClient
-        .from('answers')
-        .insert([
+        if (!participantId || !questionId || !answerData) {
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: 'Missing required fields',
+              details: { participantId, questionId, answerData }
+            }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 400,
+            }
+          );
+        }
+
+        // Get question details first
+        const { data: question, error: questionError } = await supabaseClient
+          .from('questions')
+          .select('*')
+          .eq('id', questionId)
+          .single();
+
+        if (questionError) {
+          console.error('Error fetching question:', questionError);
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: 'Failed to fetch question details',
+              details: questionError.message 
+            }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 500,
+            }
+          );
+        }
+
+        // Calculate if answer is correct and points earned
+        const isCorrect = answerData.selected_option === question.correct_option;
+        const pointsEarned = isCorrect ? question.points : 0;
+
+        // Insert answer
+        const { data: answer, error: answerError } = await supabaseClient
+          .from('answers')
+          .insert([
+            {
+              participant_id: participantId,
+              question_id: questionId,
+              selected_option: answerData.selected_option,
+              is_correct: isCorrect,
+              points_earned: pointsEarned
+            }
+          ])
+          .select();
+
+        if (answerError) {
+          console.error('Error inserting answer:', answerError);
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: 'Failed to save answer',
+              details: answerError.message 
+            }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 500,
+            }
+          );
+        }
+
+        // Update participant score
+        const { data: participant, error: participantError } = await supabaseClient
+          .from('participants')
+          .select('score')
+          .eq('id', participantId)
+          .single();
+
+        if (participantError) {
+          console.error('Error fetching participant:', participantError);
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: 'Failed to fetch participant score',
+              details: participantError.message 
+            }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 500,
+            }
+          );
+        }
+
+        const newScore = (participant.score || 0) + pointsEarned;
+
+        const { error: updateError } = await supabaseClient
+          .from('participants')
+          .update({ score: newScore })
+          .eq('id', participantId);
+
+        if (updateError) {
+          console.error('Error updating participant score:', updateError);
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: 'Failed to update score',
+              details: updateError.message 
+            }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 500,
+            }
+          );
+        }
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            data: {
+              answer,
+              isCorrect,
+              pointsEarned,
+              newScore
+            }
+          }),
           {
-            participant_id: participantId,
-            question_id: questionId,
-            selected_option: answerData.selectedOption,
-            is_correct: answerData.isCorrect,
-            points_earned: answerData.pointsEarned
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200,
           }
-        ])
-        .select()
-
-      if (error) throw error
-
-      return new Response(
-        JSON.stringify({ data }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        },
-      )
+        );
+      } catch (error) {
+        console.error('Error in submit action:', error);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'Internal server error',
+            details: error.message 
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          }
+        );
+      }
     }
 
     if (action === 'list') {
