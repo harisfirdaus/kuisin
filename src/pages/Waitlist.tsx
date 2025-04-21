@@ -1,10 +1,9 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft, Check, LayoutDashboard, LogIn, LogOut, Menu } from "lucide-react";
 
 const Waitlist = () => {
   const [email, setEmail] = useState("");
@@ -13,6 +12,8 @@ const Waitlist = () => {
   const [purpose, setPurpose] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,15 +27,106 @@ const Waitlist = () => {
     }, 1500);
   };
 
+  const handleLogout = () => {
+    // Implementasi logout
+    setIsAdminLoggedIn(false);
+  };
+
   return (
     <div className="min-h-screen bg-neo-lightgray flex flex-col">
       <nav className="neo-navbar flex justify-between items-center">
-        <div className="text-2xl font-bold">Kuisin.</div>
-        <Link to="/" className="font-medium flex items-center gap-2 hover:text-neo-blue transition-colors">
-          <ArrowLeft size={20} />
-          Kembali ke Beranda
-        </Link>
+        <div className="text-2xl font-bold">Kuisin</div>
+        <div className="hidden md:flex items-center space-x-4">
+          <Link to="/join" className="font-medium hover:text-neo-blue transition-colors">
+            Ikuti Kuis
+          </Link>
+          <Link to="/waitlist" className="neo-button inline-block">
+            Buat Kuis
+          </Link>
+          {isAdminLoggedIn ? (
+            <>
+              <Link to="/admin/dashboard" className="neo-button flex items-center gap-2">
+                <LayoutDashboard size={20} />
+                <span>Dashboard</span>
+              </Link>
+              <button onClick={handleLogout} className="neo-button flex items-center gap-2 ml-2">
+                <LogOut size={20} />
+                <span>Logout</span>
+              </button>
+            </>
+          ) : (
+            <Link to="/admin/login" className="neo-button flex items-center gap-2 ml-2">
+              <LogIn size={20} />
+              <span>Login Admin</span>
+            </Link>
+          )}
+        </div>
+        <button 
+          className="md:hidden p-2" 
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          <Menu size={24} />
+        </button>
       </nav>
+      
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 bg-white z-50">
+          <div className="p-4">
+            <div className="flex justify-between items-center mb-4">
+              <div className="text-2xl font-bold">Kuisin</div>
+              <button onClick={() => setIsMobileMenuOpen(false)}>✕</button>
+            </div>
+            <div className="flex flex-col space-y-4">
+              <Link 
+                to="/join" 
+                className="neo-button w-full flex items-center justify-center"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Ikuti Kuis
+              </Link>
+              <Link 
+                to="/waitlist" 
+                className="neo-button w-full flex items-center justify-center"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Buat Kuis
+              </Link>
+              {isAdminLoggedIn ? (
+                <>
+                  <Link 
+                    to="/admin/dashboard" 
+                    className="neo-button w-full flex items-center justify-center gap-2"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <LayoutDashboard size={20} />
+                    Dashboard
+                  </Link>
+                  <button 
+                    onClick={() => {
+                      handleLogout();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="neo-button w-full flex items-center justify-center gap-2"
+                  >
+                    <LogOut size={20} />
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <Link 
+                  to="/admin/login" 
+                  className="neo-button w-full flex items-center justify-center gap-2"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <LogIn size={20} />
+                  Login Admin
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="neo-card w-full max-w-2xl">

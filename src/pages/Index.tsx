@@ -1,11 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, LogIn, LayoutDashboard, LogOut } from "lucide-react";
+import { ArrowRight, LogIn, LayoutDashboard, LogOut, Menu } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const Index = () => {
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const navigate = useNavigate();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   useEffect(() => {
     // Check if admin is logged in
@@ -23,8 +24,8 @@ const Index = () => {
     <div className="min-h-screen bg-neo-lightgray">
       {/* Navbar */}
       <nav className="neo-navbar flex justify-between items-center">
-        <div className="text-2xl font-bold">Kuisin.</div>
-        <div className="flex items-center space-x-4">
+        <div className="text-2xl font-bold">Kuisin</div>
+        <div className="hidden md:flex items-center space-x-4">
           <Link to="/join" className="font-medium hover:text-neo-blue transition-colors">
             Ikuti Kuis
           </Link>
@@ -43,20 +44,85 @@ const Index = () => {
               </button>
             </>
           ) : (
-            <Link to="/admin/login" className="neo-button flex items-center gap-2 ml-2" aria-label="Login Admin">
+            <Link to="/admin/login" className="neo-button flex items-center gap-2 ml-2">
               <LogIn size={20} />
               <span>Login Admin</span>
             </Link>
           )}
         </div>
+        <button 
+          className="md:hidden p-2" 
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          <Menu size={24} />
+        </button>
       </nav>
+      
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 bg-white z-50">
+          <div className="p-4">
+            <div className="flex justify-between items-center mb-4">
+              <div className="text-2xl font-bold">Kuisin</div>
+              <button onClick={() => setIsMobileMenuOpen(false)}>✕</button>
+            </div>
+            <div className="flex flex-col space-y-4">
+              <Link 
+                to="/join" 
+                className="neo-button w-full flex items-center justify-center"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Ikuti Kuis
+              </Link>
+              <Link 
+                to="/waitlist" 
+                className="neo-button w-full flex items-center justify-center"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Buat Kuis
+              </Link>
+              {isAdminLoggedIn ? (
+                <>
+                  <Link 
+                    to="/admin/dashboard" 
+                    className="neo-button w-full flex items-center justify-center gap-2"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <LayoutDashboard size={20} />
+                    Dashboard
+                  </Link>
+                  <button 
+                    onClick={() => {
+                      handleLogout();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="neo-button w-full flex items-center justify-center gap-2"
+                  >
+                    <LogOut size={20} />
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <Link 
+                  to="/admin/login" 
+                  className="neo-button w-full flex items-center justify-center gap-2"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <LogIn size={20} />
+                  Login Admin
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-16 md:py-24">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
           <div className="animate-slide-in">
-            <h1 className="neo-header text-5xl md:text-6xl font-bold mb-6">
-              🚀 Kuisin: Kuis Interaktif Seru, Real-Time, dan Mudah Digunakan!
+            <h1 className="neo-header text-4xl md:text-6xl font-bold mb-6">
+              Kuis Interaktif Seru, Real-Time, dan Mudah Digunakan!
             </h1>
             <p className="text-xl mb-8">
               Buat dan ikuti kuis dengan mudah dan menyenangkan. Pantau hasil secara langsung 
