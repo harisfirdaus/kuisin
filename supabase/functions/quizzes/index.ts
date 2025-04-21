@@ -7,13 +7,23 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Generate a unique quiz code
-function generateQuizCode(length = 8) {
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+// Generate a unique quiz code with 2 letters and 2 numbers
+function generateQuizCode() {
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const numbers = '0123456789';
+  
   let result = '';
-  for (let i = 0; i < length; i++) {
-    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  
+  // Add 2 random letters
+  for (let i = 0; i < 2; i++) {
+    result += letters.charAt(Math.floor(Math.random() * letters.length));
   }
+  
+  // Add 2 random numbers
+  for (let i = 0; i < 2; i++) {
+    result += numbers.charAt(Math.floor(Math.random() * numbers.length));
+  }
+  
   return result;
 }
 
@@ -67,7 +77,7 @@ serve(async (req) => {
       });
     }
     else if (action === 'update') {
-      // Update an existing quiz
+      // Update an existing quiz but don't change the code
       const { data, error } = await supabase
         .from('quizzes')
         .update(quizData)

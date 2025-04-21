@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,7 @@ import {
   Home, 
   LogOut, 
   Plus, 
-  BarChartIcon, // Renamed to avoid conflict
+  BarChartIcon, 
   List, 
   Users,
   Archive,
@@ -16,12 +15,23 @@ import {
   ToggleRight,
   Loader2,
   Download,
+  ChevronRight,
+  ChevronDown
 } from "lucide-react";
-import { getQuizzes, deleteQuiz, toggleQuizStatus, getQuestions, getParticipants, getLeaderboard } from "@/lib/api";
+import { 
+  getQuizzes, 
+  deleteQuiz, 
+  toggleQuizStatus, 
+  getQuestions, 
+  getParticipants, 
+  getLeaderboard,
+  getParticipantAnswers 
+} from "@/lib/api";
 import { useToast } from "@/components/ui/use-toast";
 import { exportToCSV } from "@/lib/csvExport";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { ResponsiveContainer, BarChart, XAxis, YAxis, CartesianGrid, Tooltip, Bar } from "recharts";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 type Quiz = {
   id: string;
@@ -52,6 +62,9 @@ const AdminDashboard = () => {
   const [participantAnswers, setParticipantAnswers] = useState<any>({});
   const [participantsStats, setParticipantsStats] = useState<any[]>([]);
   const [isDownloadingCSV, setIsDownloadingCSV] = useState(false);
+  const [selectedParticipant, setSelectedParticipant] = useState<string | null>(null);
+  const [participantDetails, setParticipantDetails] = useState<any>(null);
+  const [loadingParticipantDetails, setLoadingParticipantDetails] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const adminSession = localStorage.getItem('adminSession');
@@ -69,7 +82,6 @@ const AdminDashboard = () => {
       setLoading(true);
       const data = await getQuizzes();
       setQuizzes(data.data || []);
-      // Fetch additional stats
       fetchQuizStats(data.data || []);
     } catch (error) {
       console.error("Error fetching quizzes:", error);
@@ -83,7 +95,6 @@ const AdminDashboard = () => {
     }
   };
 
-  // Fetch per quiz: jumlah soal, jumlah peserta dan leaderboard for each quiz
   const fetchQuizStats = async (quizList: Quiz[]) => {
     const stats = await Promise.all(
       quizList.map(async (quiz) => {
@@ -110,14 +121,12 @@ const AdminDashboard = () => {
       })
     );
     setQuizStats(stats);
-    // Statistik summary:
     setParticipantsStats(stats.map(s => ({
       quizTitle: quizzes.find(q => q.id === s.quizId)?.title,
       jumlahPeserta: s.numParticipants,
       rata2Waktu: s.avgTime,
       quizId: s.quizId,
     })));
-    // Leaderboard map
     const lbMap: Record<string, Participant[]> = {};
     stats.forEach(s => {
       lbMap[s.quizId] = s.leaderboard;
@@ -194,14 +203,25 @@ const AdminDashboard = () => {
     exportToCSV(data, `${quiz?.title || 'Leaderboard'}.csv`);
   };
 
-  // Peserta Answers
-  const fetchParticipantAnswers = async () => {
-    // TODO: implement detailed answer fetching if necessary
-    // placeholder
-    setParticipantAnswers({});
+  const handleViewParticipantDetails = async (participantId: string, quizId: string) => {
+    try {
+      setLoadingParticipantDetails(true);
+      setSelectedParticipant(participantId);
+      
+      const response = await getParticipantAnswers(participantId, quizId);
+      setParticipantDetails(response.data);
+    } catch (error) {
+      console.error("Error fetching participant details:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Gagal mendapatkan data peserta. Silakan coba lagi.",
+      });
+    } finally {
+      setLoadingParticipantDetails(false);
+    }
   };
 
-  // CSV for peserta tab
   const handleDownloadParticipantsCSV = () => {
     const allData: any[] = [];
     quizStats.forEach(stat => {
@@ -218,12 +238,10 @@ const AdminDashboard = () => {
     exportToCSV(allData, "Peserta-Kuisin.csv");
   };
 
-  // Navigasi cepat ke home jika klik teks Kuisin di sidebar
   const goHome = () => navigate("/");
 
   return (
     <div className="min-h-screen bg-neo-lightgray flex">
-      {/* Sidebar */}
       <div className="w-64 bg-white border-r-4 border-black flex flex-col">
         <div className="p-4 border-b-4 border-black">
           <button type="button" onClick={goHome} className="text-2xl font-bold hover:text-neo-blue transition-colors">
@@ -249,7 +267,7 @@ const AdminDashboard = () => {
                 className={`w-full text-left p-3 flex items-center gap-3 border-4 border-black ${activeTab === "stats" ? "bg-neo-blue text-white" : "bg-white hover:bg-gray-100"
                   }`}
               >
-                <BarChartIcon size={20} /> {/* Use renamed icon */}
+                <BarChartIcon size={20} />
                 <span>Statistik</span>
               </button>
             </li>
@@ -296,7 +314,6 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col">
         <header className="bg-white p-4 border-b-4 border-black flex justify-between items-center">
           <h2 className="text-xl font-bold">
@@ -316,7 +333,6 @@ const AdminDashboard = () => {
         </header>
 
         <main className="flex-1 p-6 overflow-auto">
-          {/* QUIZZES TAB */}
           {activeTab === "quizzes" && (
             <div className="space-y-6">
               {loading ? (
@@ -404,7 +420,6 @@ const AdminDashboard = () => {
             </div>
           )}
 
-          {/* LEADERBOARD TAB */}
           {activeTab.startsWith("leaderboard-") && (() => {
             const quizId = activeTab.replace("leaderboard-", "");
             const quiz = quizzes.find(q => q.id === quizId);
@@ -434,7 +449,14 @@ const AdminDashboard = () => {
                     {leaderboard.map((item, idx) => (
                       <TableRow key={item.id}>
                         <TableCell>{idx + 1}</TableCell>
-                        <TableCell>{item.name}</TableCell>
+                        <TableCell>
+                          <button
+                            onClick={() => handleViewParticipantDetails(item.id, quizId)}
+                            className="text-neo-blue hover:underline font-medium"
+                          >
+                            {item.name}
+                          </button>
+                        </TableCell>
                         <TableCell>{item.score}</TableCell>
                         <TableCell>{item.completion_time ?? "-"}</TableCell>
                         <TableCell>{stat?.avgTime ?? "-"}</TableCell>
@@ -443,11 +465,64 @@ const AdminDashboard = () => {
                   </TableBody>
                 </Table>
                 <Button variant="secondary" className="mt-6" onClick={() => setActiveTab("quizzes")}>Kembali</Button>
+                
+                {selectedParticipant && participantDetails && (
+                  <div className="mt-8 border-t-4 border-black pt-6">
+                    <h4 className="text-lg font-bold mb-4">
+                      Detail Jawaban: {participantDetails.participant.name}
+                    </h4>
+                    
+                    {loadingParticipantDetails ? (
+                      <div className="flex justify-center py-8">
+                        <Loader2 size={30} className="animate-spin text-neo-blue" />
+                      </div>
+                    ) : (
+                      <div className="bg-white border-4 border-black p-4">
+                        <Accordion type="single" collapsible className="w-full">
+                          {participantDetails.answers.map((answer: any, index: number) => (
+                            <AccordionItem key={answer.id} value={answer.id}>
+                              <AccordionTrigger className="py-4 px-4 hover:bg-gray-50">
+                                <div className="flex items-center gap-4">
+                                  <span className="font-bold">Pertanyaan {index + 1}</span>
+                                  <span className={answer.is_correct ? "text-green-600" : "text-red-600"}>
+                                    {answer.is_correct ? "Benar" : "Salah"}
+                                  </span>
+                                </div>
+                              </AccordionTrigger>
+                              <AccordionContent className="p-4 bg-gray-50">
+                                <div className="space-y-3">
+                                  <p><span className="font-bold">Pertanyaan:</span> {answer.questions.question_text}</p>
+                                  <p><span className="font-bold">Jawaban:</span> {
+                                    JSON.parse(answer.questions.options)[answer.selected_option]?.text || "Tidak ada jawaban"
+                                  }</p>
+                                  <p><span className="font-bold">Jawaban Benar:</span> {
+                                    JSON.parse(answer.questions.options)[answer.questions.correct_option]?.text || "Tidak ada jawaban"
+                                  }</p>
+                                  <p><span className="font-bold">Poin:</span> {answer.points_earned}</p>
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
+                          ))}
+                        </Accordion>
+                        
+                        <Button 
+                          variant="outline" 
+                          className="mt-4" 
+                          onClick={() => {
+                            setSelectedParticipant(null);
+                            setParticipantDetails(null);
+                          }}
+                        >
+                          Tutup Detail
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })()}
 
-          {/* STATISTIK TAB */}
           {activeTab === "stats" && (
             <div className="neo-card p-6">
               <h3 className="text-xl font-bold mb-4">Statistik Kuis</h3>
@@ -481,7 +556,6 @@ const AdminDashboard = () => {
               <div className="mt-10">
                 <h4 className="font-bold mb-6">Grafik Peserta per Kuis</h4>
                 <div className="bg-white border-4 border-black p-6">
-                  {/* Fixed chart component */}
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={participantsStats}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -496,7 +570,6 @@ const AdminDashboard = () => {
             </div>
           )}
 
-          {/* PESERTA TAB */}
           {activeTab === "participants" && (
             <div className="neo-card p-6">
               <div className="flex justify-between items-center mb-4">
@@ -506,7 +579,6 @@ const AdminDashboard = () => {
                   Unduh Semua Data CSV
                 </Button>
               </div>
-              {/* For each quiz, show participants */}
               {quizStats.map(stat => (
                 <div key={stat.quizId} className="mb-8">
                   <h4 className="font-bold mb-2 border-b-2 border-black pb-1">{quizzes.find(q => q.id === stat.quizId)?.title}</h4>
@@ -518,22 +590,93 @@ const AdminDashboard = () => {
                         <TableHead>Skor</TableHead>
                         <TableHead>Waktu (detik)</TableHead>
                         <TableHead>Rata-rata Waktu</TableHead>
+                        <TableHead>Aksi</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {stat.leaderboard.map((p: any, idx: number) => (
                         <TableRow key={p.id}>
                           <TableCell>{idx + 1}</TableCell>
-                          <TableCell>{p.name}</TableCell>
+                          <TableCell>
+                            <button
+                              onClick={() => handleViewParticipantDetails(p.id, stat.quizId)}
+                              className="text-neo-blue hover:underline font-medium"
+                            >
+                              {p.name}
+                            </button>
+                          </TableCell>
                           <TableCell>{p.score}</TableCell>
                           <TableCell>{p.completion_time ?? '-'}</TableCell>
                           <TableCell>{stat.avgTime ?? '-'}</TableCell>
+                          <TableCell>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => handleViewParticipantDetails(p.id, stat.quizId)}
+                            >
+                              <ChevronRight size={16} />
+                            </Button>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
                 </div>
               ))}
+              
+              {selectedParticipant && participantDetails && (
+                <div className="mt-8 border-t-4 border-black pt-6">
+                  <h4 className="text-lg font-bold mb-4">
+                    Detail Jawaban: {participantDetails.participant.name}
+                  </h4>
+                  
+                  {loadingParticipantDetails ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 size={30} className="animate-spin text-neo-blue" />
+                    </div>
+                  ) : (
+                    <div className="bg-white border-4 border-black p-4">
+                      <Accordion type="single" collapsible className="w-full">
+                        {participantDetails.answers.map((answer: any, index: number) => (
+                          <AccordionItem key={answer.id} value={answer.id}>
+                            <AccordionTrigger className="py-4 px-4 hover:bg-gray-50">
+                              <div className="flex items-center gap-4">
+                                <span className="font-bold">Pertanyaan {index + 1}</span>
+                                <span className={answer.is_correct ? "text-green-600" : "text-red-600"}>
+                                  {answer.is_correct ? "Benar" : "Salah"}
+                                </span>
+                              </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="p-4 bg-gray-50">
+                              <div className="space-y-3">
+                                <p><span className="font-bold">Pertanyaan:</span> {answer.questions.question_text}</p>
+                                <p><span className="font-bold">Jawaban:</span> {
+                                  JSON.parse(answer.questions.options)[answer.selected_option]?.text || "Tidak ada jawaban"
+                                }</p>
+                                <p><span className="font-bold">Jawaban Benar:</span> {
+                                  JSON.parse(answer.questions.options)[answer.questions.correct_option]?.text || "Tidak ada jawaban"
+                                }</p>
+                                <p><span className="font-bold">Poin:</span> {answer.points_earned}</p>
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        ))}
+                      </Accordion>
+                      
+                      <Button 
+                        variant="outline" 
+                        className="mt-4" 
+                        onClick={() => {
+                          setSelectedParticipant(null);
+                          setParticipantDetails(null);
+                        }}
+                      >
+                        Tutup Detail
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
           
@@ -555,4 +698,5 @@ const AdminDashboard = () => {
     </div>
   );
 };
+
 export default AdminDashboard;

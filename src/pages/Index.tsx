@@ -1,9 +1,25 @@
 
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
-import { ArrowRight, LogIn } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowRight, LogIn, LayoutDashboard, LogOut } from "lucide-react";
+import { useEffect, useState } from "react";
 
 const Index = () => {
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    // Check if admin is logged in
+    const adminSession = localStorage.getItem('adminSession');
+    setIsAdminLoggedIn(!!adminSession);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('adminUser');
+    localStorage.removeItem('adminSession');
+    setIsAdminLoggedIn(false);
+  };
+
   return (
     <div className="min-h-screen bg-neo-lightgray">
       {/* Navbar */}
@@ -16,10 +32,23 @@ const Index = () => {
           <Link to="/waitlist" className="neo-button inline-block">
             Buat Kuis
           </Link>
-          <Link to="/admin/login" className="neo-button flex items-center gap-2 ml-2" aria-label="Login Admin">
-            <LogIn size={20} />
-            <span>Login Admin</span>
-          </Link>
+          {isAdminLoggedIn ? (
+            <>
+              <Link to="/admin/dashboard" className="neo-button flex items-center gap-2">
+                <LayoutDashboard size={20} />
+                <span>Dashboard</span>
+              </Link>
+              <button onClick={handleLogout} className="neo-button flex items-center gap-2 ml-2">
+                <LogOut size={20} />
+                <span>Logout</span>
+              </button>
+            </>
+          ) : (
+            <Link to="/admin/login" className="neo-button flex items-center gap-2 ml-2" aria-label="Login Admin">
+              <LogIn size={20} />
+              <span>Login Admin</span>
+            </Link>
+          )}
         </div>
       </nav>
       

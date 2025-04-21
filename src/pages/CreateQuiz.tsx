@@ -37,13 +37,11 @@ const CreateQuiz = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
-  // Quiz basic info
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [timePerQuestion, setTimePerQuestion] = useState("30");
   const [defaultPoints, setDefaultPoints] = useState("10");
   
-  // Questions
   const [questions, setQuestions] = useState<Question[]>([
     {
       question_text: "",
@@ -59,7 +57,6 @@ const CreateQuiz = () => {
     }
   ]);
 
-  // Check if admin is logged in
   useEffect(() => {
     const adminSession = localStorage.getItem('adminSession');
     if (!adminSession) {
@@ -67,7 +64,6 @@ const CreateQuiz = () => {
       return;
     }
     
-    // If editing an existing quiz
     if (quizId) {
       fetchQuiz();
     }
@@ -79,13 +75,11 @@ const CreateQuiz = () => {
       const response = await getQuiz(quizId!);
       const quiz = response.data;
       
-      // Set quiz basic info
       setTitle(quiz.title);
       setDescription(quiz.description || "");
       setTimePerQuestion(String(quiz.duration_per_question));
       setDefaultPoints(String(quiz.default_points));
       
-      // Set questions if any
       if (quiz.questions && quiz.questions.length > 0) {
         setQuestions(quiz.questions.map((q: any) => ({
           id: q.id,
@@ -161,7 +155,6 @@ const CreateQuiz = () => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Validate form
     if (!title) {
       toast({
         variant: "destructive",
@@ -172,7 +165,6 @@ const CreateQuiz = () => {
       return;
     }
     
-    // Validate questions
     for (const [index, question] of questions.entries()) {
       if (!question.question_text) {
         toast({
@@ -198,7 +190,6 @@ const CreateQuiz = () => {
     }
     
     try {
-      // Get admin user ID
       const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}');
       
       if (!adminUser.id) {
@@ -207,7 +198,6 @@ const CreateQuiz = () => {
       
       let savedQuizId = quizId;
       
-      // If it's a new quiz, create it
       if (!quizId) {
         const quizData = {
           title,
@@ -219,7 +209,6 @@ const CreateQuiz = () => {
         const response = await createQuiz(quizData, adminUser.id);
         savedQuizId = response.data[0].id;
       } else {
-        // Otherwise update the existing quiz
         const quizData = {
           title,
           description,
@@ -230,7 +219,6 @@ const CreateQuiz = () => {
         await updateQuiz(quizId, quizData);
       }
       
-      // Now handle questions
       for (const question of questions) {
         const questionData = {
           question_text: question.question_text,
@@ -242,22 +230,18 @@ const CreateQuiz = () => {
         };
         
         if (question.id) {
-          // Update existing question
           await updateQuestion(question.id, questionData);
         } else {
-          // Create new question
           await createQuestion(savedQuizId!, questionData);
         }
       }
       
-      // If editing and some questions were removed, they need to be deleted
       if (quizId) {
         const originalQuiz = await getQuiz(quizId);
         const originalQuestions = originalQuiz.data.questions || [];
         
-        // Find questions that exist in original but not in current state
         const currentQuestionIds = questions
-          .filter(q => q.id) // Only consider questions with IDs
+          .filter(q => q.id)
           .map(q => q.id);
           
         for (const origQuestion of originalQuestions) {
@@ -274,7 +258,6 @@ const CreateQuiz = () => {
           : "Kuis baru berhasil dibuat.",
       });
       
-      // Redirect to admin dashboard
       navigate("/admin/dashboard");
     } catch (error) {
       console.error("Error saving quiz:", error);
@@ -325,7 +308,6 @@ const CreateQuiz = () => {
           
           <form onSubmit={handleSubmit}>
             <div className="space-y-8">
-              {/* Quiz Info Section */}
               <div className="space-y-4 p-6 border-4 border-black">
                 <h2 className="text-xl font-bold mb-4">Informasi Kuis</h2>
                 
@@ -393,18 +375,9 @@ const CreateQuiz = () => {
                 )}
               </div>
               
-              {/* Questions Section */}
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <h2 className="text-xl font-bold">Pertanyaan</h2>
-                  <Button 
-                    type="button"
-                    onClick={addQuestion}
-                    className="neo-button-secondary flex items-center gap-2"
-                  >
-                    <Plus size={18} />
-                    Tambah Pertanyaan
-                  </Button>
                 </div>
                 
                 {questions.map((question, qIndex) => (
@@ -490,6 +463,15 @@ const CreateQuiz = () => {
                     </div>
                   </div>
                 ))}
+                
+                <Button 
+                  type="button"
+                  onClick={addQuestion}
+                  className="neo-button-secondary flex items-center gap-2 w-full justify-center py-3"
+                >
+                  <Plus size={18} />
+                  Tambah Pertanyaan
+                </Button>
               </div>
               
               <div className="flex justify-end gap-4">
