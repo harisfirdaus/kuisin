@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.0";
 
@@ -36,17 +35,30 @@ serve(async (req) => {
     } 
     else if (action === 'create') {
       // Create a new question
+      console.log('Creating new question with data:', { quizId, questionData });
+      
+      if (!quizId || !questionData) {
+        throw new Error('Missing required fields: quizId or questionData');
+      }
+
+      if (!questionData.question_text || !questionData.options || !questionData.correct_option) {
+        throw new Error('Missing required question fields');
+      }
+
       const { data, error } = await supabase
         .from('questions')
-        .insert([
-          { 
-            ...questionData,
-            quiz_id: quizId
-          }
-        ])
+        .insert([{ 
+          ...questionData,
+          quiz_id: quizId
+        }])
         .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating question:', error);
+        throw error;
+      }
+      
+      console.log('Question created successfully:', data);
       
       return new Response(JSON.stringify({ success: true, data }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

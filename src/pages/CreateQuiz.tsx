@@ -229,10 +229,31 @@ const CreateQuiz = () => {
           time_limit: parseInt(timePerQuestion)
         };
         
-        if (question.id) {
-          await updateQuestion(question.id, questionData);
-        } else {
-          await createQuestion(savedQuizId!, questionData);
+        try {
+          if (question.id) {
+            await updateQuestion(question.id, questionData);
+          } else {
+            console.log('Sending new question data:', questionData);
+            const response = await createQuestion(savedQuizId!, questionData);
+            console.log('Create question response:', response);
+            
+            if (!response.data || !response.data[0]) {
+              throw new Error('Failed to create question: No data returned');
+            }
+            
+            // Update the question in state with the new ID
+            question.id = response.data[0].id;
+            question.quiz_id = savedQuizId;
+          }
+        } catch (error) {
+          console.error('Error handling question:', error);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: `Gagal ${question.id ? 'memperbarui' : 'membuat'} pertanyaan. ${error.message}`,
+          });
+          setIsSubmitting(false);
+          return;
         }
       }
       
