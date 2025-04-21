@@ -198,7 +198,6 @@ const AdminDashboard = () => {
       Nama: item.name,
       Skor: item.score,
       Waktu: item.completion_time ?? '-',
-      'Rata-rata Waktu': stat?.avgTime ?? '-',
     }));
     exportToCSV(data, `${quiz?.title || 'Leaderboard'}.csv`);
   };
@@ -231,7 +230,6 @@ const AdminDashboard = () => {
           Nama: p.name,
           Skor: p.score,
           Waktu: p.completion_time ?? '-',
-          'Rata-rata Waktu': stat.avgTime ?? '-',
         });
       });
     });
@@ -438,28 +436,19 @@ const AdminDashboard = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>#</TableHead>
+                      <TableHead>Peringkat</TableHead>
                       <TableHead>Nama</TableHead>
                       <TableHead>Skor</TableHead>
-                      <TableHead>Waktu (detik)</TableHead>
-                      <TableHead>Rata-rata Waktu</TableHead>
+                      <TableHead>Waktu</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {leaderboard.map((item, idx) => (
-                      <TableRow key={item.id}>
+                    {leaderboard.map((participant, idx) => (
+                      <TableRow key={participant.id}>
                         <TableCell>{idx + 1}</TableCell>
-                        <TableCell>
-                          <button
-                            onClick={() => handleViewParticipantDetails(item.id, quizId)}
-                            className="text-neo-blue hover:underline font-medium"
-                          >
-                            {item.name}
-                          </button>
-                        </TableCell>
-                        <TableCell>{item.score}</TableCell>
-                        <TableCell>{item.completion_time ?? "-"}</TableCell>
-                        <TableCell>{stat?.avgTime ?? "-"}</TableCell>
+                        <TableCell>{participant.name}</TableCell>
+                        <TableCell>{participant.score}</TableCell>
+                        <TableCell>{participant.completion_time ?? '-'}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -579,50 +568,26 @@ const AdminDashboard = () => {
                   Unduh Semua Data CSV
                 </Button>
               </div>
-              {quizStats.map(stat => (
-                <div key={stat.quizId} className="mb-8">
-                  <h4 className="font-bold mb-2 border-b-2 border-black pb-1">{quizzes.find(q => q.id === stat.quizId)?.title}</h4>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>#</TableHead>
-                        <TableHead>Nama</TableHead>
-                        <TableHead>Skor</TableHead>
-                        <TableHead>Waktu (detik)</TableHead>
-                        <TableHead>Rata-rata Waktu</TableHead>
-                        <TableHead>Aksi</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {stat.leaderboard.map((p: any, idx: number) => (
-                        <TableRow key={p.id}>
-                          <TableCell>{idx + 1}</TableCell>
-                          <TableCell>
-                            <button
-                              onClick={() => handleViewParticipantDetails(p.id, stat.quizId)}
-                              className="text-neo-blue hover:underline font-medium"
-                            >
-                              {p.name}
-                            </button>
-                          </TableCell>
-                          <TableCell>{p.score}</TableCell>
-                          <TableCell>{p.completion_time ?? '-'}</TableCell>
-                          <TableCell>{stat.avgTime ?? '-'}</TableCell>
-                          <TableCell>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => handleViewParticipantDetails(p.id, stat.quizId)}
-                            >
-                              <ChevronRight size={16} />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              ))}
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Kuis</TableHead>
+                    <TableHead>Nama</TableHead>
+                    <TableHead>Skor</TableHead>
+                    <TableHead>Waktu</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {participantsStats.map((stat) => (
+                    <TableRow key={stat.quizId}>
+                      <TableCell>{stat.quizTitle}</TableCell>
+                      <TableCell>{stat.jumlahPeserta}</TableCell>
+                      <TableCell>{stat.skor}</TableCell>
+                      <TableCell>{stat.waktu ?? '-'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
               
               {selectedParticipant && participantDetails && (
                 <div className="mt-8 border-t-4 border-black pt-6">

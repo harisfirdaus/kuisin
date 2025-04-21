@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, LogIn, LayoutDashboard, LogOut } from "lucide-react";
@@ -140,7 +139,7 @@ const Index = () => {
       {/* CTA Akhir */}
       <section className="container mx-auto px-4 py-16">
         <div className="neo-card text-center max-w-2xl mx-auto p-12 bg-white border-4 border-neo-blue shadow-lg">
-          <h2 className="text-3xl font-bold mb-6">Siap Hosting Kuis Menarik? Daftar Sekarang!</h2>
+          <h2 className="text-3xl font-bold mb-6">Siap Ikuti atau Buat Kuis Menarik? Bergabung Sekarang!</h2>
           <div className="flex flex-col sm:flex-row justify-center gap-4 mt-6">
             <Link to="/join" className="neo-button flex items-center justify-center gap-2">
               Ikuti Kuis
