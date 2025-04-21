@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -20,21 +19,40 @@ const JoinQuiz = () => {
     setIsLoading(true);
     setError("");
     
+    if (!name.trim() || !quizCode.trim()) {
+      setError("Nama dan kode kuis harus diisi");
+      setIsLoading(false);
+      return;
+    }
+    
     try {
-      const result = await joinQuiz(quizCode.toUpperCase(), name);
+      const result = await joinQuiz(quizCode.toUpperCase(), name.trim());
+      
+      if (!result.data?.[0]?.id || !result.data?.[0]?.quiz_id) {
+        throw new Error("Data peserta tidak valid");
+      }
       
       // Store participant info in local storage
       localStorage.setItem('participant', JSON.stringify({
         id: result.data[0].id,
-        name,
+        name: name.trim(),
         quizId: result.data[0].quiz_id
       }));
       
       // Redirect to quiz play page
-      navigate(`/quiz/${result.data[0].quiz_id}?name=${encodeURIComponent(name)}`);
+      navigate(`/quiz/${result.data[0].quiz_id}?name=${encodeURIComponent(name.trim())}`);
     } catch (err: any) {
       console.error("Error joining quiz:", err);
       setError(err.message || "Gagal bergabung ke kuis. Silakan periksa kode kuis dan coba lagi.");
+      
+      // Show toast for network errors
+      if (err.message.includes('Gagal terhubung ke server')) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: err.message
+        });
+      }
     } finally {
       setIsLoading(false);
     }

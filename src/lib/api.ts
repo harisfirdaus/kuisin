@@ -149,15 +149,27 @@ export const getParticipants = async (quizId: string) => {
 };
 
 export const joinQuiz = async (quizCode: string, participantName: string) => {
-  const response = await supabase.functions.invoke('participants', {
-    body: { action: 'join', quizCode, participantName },
-  });
+  try {
+    const response = await supabase.functions.invoke('participants', {
+      body: { action: 'join', quizCode, participantName },
+    });
 
-  if (response.error) {
-    throw new Error(response.error.message);
+    if (response.error) {
+      throw new Error(response.error.message);
+    }
+
+    if (!response.data.success) {
+      throw new Error(response.data.error || 'Gagal bergabung ke kuis');
+    }
+
+    return response.data;
+  } catch (error: any) {
+    console.error('Error in joinQuiz:', error);
+    if (error.message.includes('Edge Function returned a non-2xx status code')) {
+      throw new Error('Gagal terhubung ke server. Silakan coba lagi.');
+    }
+    throw error;
   }
-
-  return response.data;
 };
 
 export const updateParticipant = async (participantId: string, participantData: any) => {

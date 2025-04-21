@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.0";
 
@@ -20,6 +19,8 @@ serve(async (req) => {
 
     const { action, participantData, participantId, quizId, quizCode, participantName } = await req.json();
 
+    console.log('Received request:', { action, quizCode, participantName });
+
     if (action === 'list') {
       // Get list of participants for a quiz
       const { data, error } = await supabase
@@ -36,22 +37,43 @@ serve(async (req) => {
       });
     } 
     else if (action === 'join') {
+      // Validate required fields
+      if (!quizCode || !participantName) {
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'Kode kuis dan nama peserta harus diisi' 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       // First, get the quiz ID from the code
       const { data: quizData, error: quizError } = await supabase
         .from('quizzes')
         .select('id, title, is_active')
-        .eq('code', quizCode)
+        .eq('code', quizCode.toUpperCase())
         .single();
       
+      console.log('Quiz data:', quizData, 'Error:', quizError);
+
       if (quizError) {
-        return new Response(JSON.stringify({ success: false, error: 'Kode kuis tidak valid' }), {
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'Kode kuis tidak valid',
+          details: quizError.message 
+        }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
       
       if (!quizData.is_active) {
-        return new Response(JSON.stringify({ success: false, error: 'Kuis ini tidak aktif' }), {
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'Kuis ini tidak aktif',
+          quizId: quizData.id 
+        }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -62,14 +84,26 @@ serve(async (req) => {
         .from('participants')
         .insert([
           { 
-            name: participantName,
+            name: participantName.trim(),
             quiz_id: quizData.id,
-            score: 0
+            score: 0,
+            completion_time: null
           }
         ])
         .select();
 
-      if (error) throw error;
+      console.log('Participant creation:', data, 'Error:', error);
+
+      if (error) {
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'Gagal mendaftarkan peserta',
+          details: error.message 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       
       return new Response(JSON.stringify({ success: true, data, quiz: quizData }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
