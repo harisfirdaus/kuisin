@@ -2,7 +2,10 @@
 export function exportToCSV(data: any[], filename: string) {
   if (!Array.isArray(data) || data.length === 0) return;
 
-  const replacer = (key: string, value: any) => (value === null ? '' : value);
+  const replacer = (key: string, value: any) => {
+    if (value === null || value === undefined) return '';
+    return value;
+  };
 
   const header = Object.keys(data[0]);
   const csv = [

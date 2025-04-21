@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,7 @@ import {
   Home, 
   LogOut, 
   Plus, 
-  BarChart, 
+  BarChartIcon, // Renamed to avoid conflict
   List, 
   Users,
   Archive,
@@ -20,7 +21,7 @@ import { getQuizzes, deleteQuiz, toggleQuizStatus, getQuestions, getParticipants
 import { useToast } from "@/components/ui/use-toast";
 import { exportToCSV } from "@/lib/csvExport";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { Chart, BarChart, XAxis, YAxis, CartesianGrid, Tooltip, Bar } from "recharts";
+import { ResponsiveContainer, BarChart, XAxis, YAxis, CartesianGrid, Tooltip, Bar } from "recharts";
 
 type Quiz = {
   id: string;
@@ -248,7 +249,7 @@ const AdminDashboard = () => {
                 className={`w-full text-left p-3 flex items-center gap-3 border-4 border-black ${activeTab === "stats" ? "bg-neo-blue text-white" : "bg-white hover:bg-gray-100"
                   }`}
               >
-                <BarChart size={20} />
+                <BarChartIcon size={20} /> {/* Use renamed icon */}
                 <span>Statistik</span>
               </button>
             </li>
@@ -480,14 +481,16 @@ const AdminDashboard = () => {
               <div className="mt-10">
                 <h4 className="font-bold mb-6">Grafik Peserta per Kuis</h4>
                 <div className="bg-white border-4 border-black p-6">
-                  {/* Simple bar chart: use recharts */}
-                  <Chart width={600} height={300} data={participantsStats}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="quizTitle" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="jumlahPeserta" fill="#8884d8" />
-                  </Chart>
+                  {/* Fixed chart component */}
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={participantsStats}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="quizTitle" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="jumlahPeserta" fill="#8884d8" />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
             </div>
