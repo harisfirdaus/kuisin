@@ -379,9 +379,7 @@ const QuizPlay = () => {
                               <XCircle size={16} className="text-red-600" />
                             )}
                             <p>
-                              {selectedOption 
-                                ? `Jawaban: ${selectedOption.text}`
-                                : "Tidak menjawab"}
+                              Jawaban: {selectedOption ? selectedOption.text : "Tidak menjawab"}
                               {answer.isCorrect && ` (+${answer.points} poin)`}
                             </p>
                           </div>
