@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, LogIn } from "lucide-react";
 
 const Index = () => {
   return (
@@ -9,9 +9,17 @@ const Index = () => {
       {/* Navbar */}
       <nav className="neo-navbar flex justify-between items-center">
         <div className="text-2xl font-bold">Kuisin.</div>
-        <div className="space-x-4">
-          <Link to="/join" className="font-medium hover:text-neo-blue transition-colors">Ikuti Kuis</Link>
-          <Link to="/waitlist" className="neo-button inline-block">Buat Kuis</Link>
+        <div className="flex items-center space-x-4">
+          <Link to="/join" className="font-medium hover:text-neo-blue transition-colors">
+            Ikuti Kuis
+          </Link>
+          <Link to="/waitlist" className="neo-button inline-block">
+            Buat Kuis
+          </Link>
+          <Link to="/admin/login" className="neo-button flex items-center gap-2 ml-2" aria-label="Login Admin">
+            <LogIn size={20} />
+            <span>Login Admin</span>
+          </Link>
         </div>
       </nav>
       
@@ -40,7 +48,7 @@ const Index = () => {
           
           <div className="neo-card animate-pulse-scale">
             <img 
-              src="https://images.unsplash.com/photo-1605810230434-7631ac76ec81" 
+              src="https://media-hosting.imagekit.io/b29dd61dca03478a/pexels-leeloothefirst-5428830.jpg?Expires=1839806770&Key-Pair-Id=K2ZIVPTIP2VGHC&Signature=gjvUiScPXD2yEwvrqufoHwPrUHUM4W6Z7N1u9tCPXN700VVLFaQuVjo2CLz1wN3kjgxrtT3KFW0BCiM~L9QgNHWucm8BR974HjiNMod7LOrPbMkuDrodBwg4XQyM7~qg06oZMxJAY6gS3ws6mAFqwSu84oEOC~u99nHK3nKLiOdst7VdvRCXD-cbIwArXIhtFqwhAterI170FbMe~2RkRQbj85fbu7Hph0Fcwp7LLPdDslQaxwdIfjW-Go-woU25RyGGN5~aMfH51PShzhNbRdh93lBAEjOcqySd2anMB0auF6~blIznoPrhtqMPC-tBt2~YSleu~McVpTlNCU~YNA__" 
               alt="Kuisin Quiz Platform" 
               className="w-full h-auto border-4 border-black"
             />
@@ -99,10 +107,40 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* CTA Akhir */}
+      <section className="container mx-auto px-4 py-16">
+        <div className="neo-card text-center max-w-2xl mx-auto p-12 bg-white border-4 border-neo-blue shadow-lg">
+          <h2 className="text-3xl font-bold mb-6">Siap Hosting Kuis Menarik? Daftar Sekarang!</h2>
+          <div className="flex flex-col sm:flex-row justify-center gap-4 mt-6">
+            <Link to="/join" className="neo-button flex items-center justify-center gap-2">
+              Ikuti Kuis
+              <ArrowRight size={20} />
+            </Link>
+            <Link to="/waitlist" className="neo-button-secondary flex items-center justify-center gap-2">
+              Buat Kuis
+              <ArrowRight size={20} />
+            </Link>
+          </div>
+        </div>
+      </section>
       
       {/* Footer */}
-      <footer className="neo-navbar mt-16 text-center py-6">
-        <p>&copy; {new Date().getFullYear()} Kuisin. All rights reserved.</p>
+      <footer className="neo-navbar mt-16 text-center py-6 flex flex-col items-center">
+        <p>
+          &copy; {new Date().getFullYear()} Kuisin. All rights reserved.
+        </p>
+        <p className="mt-2">
+          Developed by{" "}
+          <a
+            href="https://www.threads.net/@harisfirda"
+            className="underline hover:text-neo-blue"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Haris Firdaus
+          </a>
+        </p>
       </footer>
     </div>
   );

@@ -1,73 +1,58 @@
-# Welcome to your Lovable project
 
-## Project info
+# Kuisin - Kuis Interaktif Real-Time
 
-**URL**: https://lovable.dev/projects/4303717a-ef0f-41f7-bbb0-403011e5a373
+Platform kuis online interaktif berbasis web dengan dashboard admin, pengelolaan soal, sistem partisipan, leaderboard real-time, dan statistik hasil.
 
-## How can I edit this code?
+## Fitur Utama
 
-There are several ways of editing your application.
+### Fitur Admin
+- **Sistem autentikasi admin:** Login menggunakan email & password (data admin dikelola di Supabase).
+- **Manajemen Kuis:** Membuat, mengedit, dan menghapus kuis.
+- **Manajemen Pertanyaan:** Input soal pilihan ganda, mengunggah gambar/media, menandai jawaban benar, dan atur bobot nilai.
+- **Statistik & Monitoring:** Statistik peserta, leaderboard real-time, riwayat skor peserta, dan export data hasil.
+- **Edge Functions:** Semua operasi CRUD penting pada data (kuis, pertanyaan, jawaban, partisipan) dijalankan lewat Edge Functions agar data penting tidak terekspos di frontend.
 
-**Use Lovable**
+### Fitur Pengguna
+- **Quick Join:** Ikut kuis tanpa registrasi, cukup input nama & kode kuis.
+- **Antarmuka Kuis:** Timer per soal, animasi feedback jawaban.
+- **Skor & Leaderboard:** Langsung tahu skor & ranking setelah selesai menjawab.
+- **Hasil Akhir:** Total skor, posisi peringkat, review jawaban (benar/salah).
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/4303717a-ef0f-41f7-bbb0-403011e5a373) and start prompting.
+### Teknologi
+- **Frontend:** React, TypeScript, TailwindCSS (Neo-Brutalism style), shadcn-ui, Vite.
+- **Backend:** Supabase (database, Edge Functions, autentikasi admin), WebSocket untuk real-time updates.
+- **Design:** Bold blue accent, high-contrast, thick black borders, hard shadows, intentionally "undesigned" look.
 
-Changes made via Lovable will be committed automatically to this repo.
+## Struktur Folder
 
-**Use your preferred IDE**
+- `src/pages`: Halaman utama (Landing, Join, Waitlist, Admin, Dashboard, dll).
+- `src/components`: Komponen UI dan fungsional.
+- `src/integrations/supabase`: Client Supabase JS.
+- `supabase/functions`: Edge Functions untuk backend logic.
+- `README.md`: Dokumentasi aplikasi dan pengembangan.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Jalankan Lokal
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+1. **Clone repo:**  
+   `git clone <YOUR_GIT_URL>`
+2. **Install dependencies:**  
+   `npm install`
+3. **Jalankan aplikasi:**  
+   `npm run dev`
+4. **Preview:**  
+   Aplikasi akan tersedia di `http://localhost:5173` (atau port Vite lainnya).
 
-Follow these steps:
+## Deployment & Domain
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+- Klik "Share" di dashboard lovable.dev untuk publish aplikasi.
+- Hubungkan custom domain lewat menu Project > Settings > Domains.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## Catatan Keamanan
 
-# Step 3: Install the necessary dependencies.
-npm i
+- Semua operasi sensitif (buat/edit hapus kuis/soal/jawaban) dilakukan via Edge Functions.
+- Data penting tidak boleh diakses langsung dari frontend.
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+## Tim Pengembang
 
-**Edit a file directly in GitHub**
+- Developed by [Haris Firdaus](https://www.threads.net/@harisfirda)
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/4303717a-ef0f-41f7-bbb0-403011e5a373) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
