@@ -162,10 +162,16 @@ serve(async (req) => {
           );
         }
 
-        // Update participant score
+        // Get participant details and check if this is the last question
         const { data: participant, error: participantError } = await supabaseClient
           .from('participants')
-          .select('score')
+          .select(`
+            *,
+            quizzes!inner (
+              id,
+              questions (count)
+            )
+          `)
           .eq('id', participantId)
           .single();
 
@@ -174,7 +180,7 @@ serve(async (req) => {
           return new Response(
             JSON.stringify({ 
               success: false, 
-              error: 'Failed to fetch participant score',
+              error: 'Failed to fetch participant details',
               details: participantError.message 
             }),
             {
@@ -184,19 +190,52 @@ serve(async (req) => {
           );
         }
 
-        const newScore = (participant.score || 0) + pointsEarned;
+        // Count answered questions
+        const { count: answeredQuestions, error: countError } = await supabaseClient
+          .from('answers')
+          .select('*', { count: 'exact' })
+          .eq('participant_id', participantId);
 
-        const { error: updateError } = await supabaseClient
-          .from('participants')
-          .update({ score: newScore })
-          .eq('id', participantId);
-
-        if (updateError) {
-          console.error('Error updating participant score:', updateError);
+        if (countError) {
+          console.error('Error counting answers:', countError);
           return new Response(
             JSON.stringify({ 
               success: false, 
-              error: 'Failed to update score',
+              error: 'Failed to count answers',
+              details: countError.message 
+            }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 500,
+            }
+          );
+        }
+
+        // Calculate new score
+        const newScore = (participant.score || 0) + pointsEarned;
+
+        // Update participant data
+        const updateData: any = { score: newScore };
+
+        // If this is the last question, calculate completion time
+        if (answeredQuestions === participant.quizzes.questions[0].count) {
+          const startTime = new Date(participant.created_at).getTime();
+          const endTime = new Date().getTime();
+          const completionTime = Math.round((endTime - startTime) / 1000); // Convert to seconds
+          updateData.completion_time = completionTime;
+        }
+
+        const { error: updateError } = await supabaseClient
+          .from('participants')
+          .update(updateData)
+          .eq('id', participantId);
+
+        if (updateError) {
+          console.error('Error updating participant:', updateError);
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: 'Failed to update participant',
               details: updateError.message 
             }),
             {
@@ -207,13 +246,15 @@ serve(async (req) => {
         }
 
         return new Response(
-          JSON.stringify({ 
-            success: true, 
+          JSON.stringify({
+            success: true,
             data: {
               answer,
               isCorrect,
               pointsEarned,
-              newScore
+              newScore,
+              isComplete: answeredQuestions === participant.quizzes.questions[0].count,
+              completionTime: updateData.completion_time
             }
           }),
           {

@@ -2,15 +2,16 @@ import { supabase } from "@/integrations/supabase/client";
 
 // Authentication
 export const loginAdmin = async (email: string, password: string) => {
-  const response = await supabase.functions.invoke('auth', {
-    body: { action: 'login', email, password },
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
   });
 
-  if (response.error) {
-    throw new Error(response.error.message);
+  if (error) {
+    throw new Error(error.message);
   }
 
-  return response.data;
+  return { data };
 };
 
 // Quiz management
