@@ -31,7 +31,7 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { exportToCSV } from "@/lib/csvExport";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { ResponsiveContainer, BarChart, XAxis, YAxis, CartesianGrid, Tooltip, Bar } from "recharts";
+import { ResponsiveContainer, BarChart, XAxis, YAxis, CartesianGrid, Tooltip, Bar, Legend, Cell } from "recharts";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 type Quiz = {
@@ -51,6 +51,17 @@ type Participant = {
   score: number;
   completion_time: number | null;
 };
+
+const CHART_COLORS = [
+  "#8884d8", // Ungu
+  "#82ca9d", // Hijau
+  "#ffc658", // Kuning
+  "#ff7300", // Oranye
+  "#0088fe", // Biru
+  "#00c49f", // Tosca
+  "#ffbb28", // Kuning Tua
+  "#ff8042", // Oranye Tua
+];
 
 const AdminDashboard = () => {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
@@ -143,11 +154,12 @@ const AdminDashboard = () => {
       })
     );
     setQuizStats(stats);
-    setParticipantsStats(stats.map(s => ({
-      quizTitle: quizzes.find(q => q.id === s.quizId)?.title,
+    setParticipantsStats(stats.map((s, index) => ({
+      quizTitle: quizzes.find(q => q.id === s.quizId)?.title || "Tidak ada judul",
       jumlahPeserta: s.numParticipants,
       rata2Waktu: s.avgTime,
       quizId: s.quizId,
+      fill: CHART_COLORS[index % CHART_COLORS.length],
     })));
     const lbMap: Record<string, Participant[]> = {};
     stats.forEach(s => {
@@ -614,19 +626,29 @@ const AdminDashboard = () => {
                             const data = payload[0].payload;
                             return (
                               <div className="neo-card bg-white border-2 border-black p-3 shadow-lg">
-                                <p className="font-medium text-sm md:text-base mb-1">Kuis: {data.quizTitle}</p>
-                                <p className="text-sm md:text-base">Jumlah Peserta: {data.jumlahPeserta}</p>
+                                <p className="font-medium text-sm md:text-base mb-1" style={{ color: data.fill }}>
+                                  {data.quizTitle}
+                                </p>
+                                <p className="text-sm md:text-base text-black">
+                                  Jumlah Peserta: {data.jumlahPeserta}
+                                </p>
                               </div>
                             );
                           }
                           return null;
                         }}
                       />
+                      <Legend />
                       <Bar 
-                        dataKey="jumlahPeserta" 
+                        name="Jumlah Peserta"
+                        dataKey="jumlahPeserta"
                         fill="#8884d8"
                         radius={[4, 4, 0, 0]}
-                      />
+                      >
+                        {participantsStats.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
