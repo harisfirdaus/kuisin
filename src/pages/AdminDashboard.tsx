@@ -659,7 +659,6 @@ const AdminDashboard = () => {
                               <TableHead>Nama</TableHead>
                               <TableHead>Skor</TableHead>
                               <TableHead>Waktu</TableHead>
-                              <TableHead>Aksi</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -668,21 +667,11 @@ const AdminDashboard = () => {
                                 <TableCell>{participant.name}</TableCell>
                                 <TableCell>{participant.score}</TableCell>
                                 <TableCell>{participant.completion_time ?? '-'}</TableCell>
-                                <TableCell>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleViewParticipantDetails(participant.id, quiz.id)}
-                                    className="text-xs"
-                                  >
-                                    Lihat Detail
-                                  </Button>
-                                </TableCell>
                               </TableRow>
                             ))}
                             {participants.length === 0 && (
                               <TableRow>
-                                <TableCell colSpan={4} className="text-center py-4">
+                                <TableCell colSpan={3} className="text-center py-4">
                                   Belum ada peserta
                                 </TableCell>
                               </TableRow>
