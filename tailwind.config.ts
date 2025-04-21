@@ -28,6 +28,15 @@ export default {
 					DEFAULT: 'hsl(var(--primary))',
 					foreground: 'hsl(var(--primary-foreground))'
 				},
+                neo: {
+                    blue: '#1EAEDB',
+                    black: '#000000',
+                    white: '#FFFFFF',
+                    gray: '#403E43',
+                    darkgray: '#222222',
+                    lightgray: '#F1F1F1',
+                    red: '#ea384c',
+                },
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
 					foreground: 'hsl(var(--secondary-foreground))'
