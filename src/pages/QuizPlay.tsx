@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useParams, useSearchParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -53,15 +52,11 @@ const QuizPlay = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [startTime, setStartTime] = useState<number>(Date.now());
   
-  // Use ref for timer
   const timerRef = useRef<number | undefined>(undefined);
   
-  // Current question shorthand
   const currentQuestion = questions[currentQuestionIndex];
   
-  // Load quiz and questions on mount
   useEffect(() => {
-    // Check if participant data exists
     if (!participantData.id || !participantData.quizId) {
       navigate('/join');
       return;
@@ -70,7 +65,6 @@ const QuizPlay = () => {
     loadQuizData();
   }, [quizId, navigate]);
   
-  // Set up timer when question changes
   useEffect(() => {
     if (!isLoading && !quizCompleted && !isAnswerSubmitted && currentQuestion) {
       startTimer();
@@ -87,11 +81,9 @@ const QuizPlay = () => {
     try {
       setIsLoading(true);
       
-      // Get quiz details
       const quizResponse = await getQuiz(quizId!);
       setQuiz(quizResponse.data);
       
-      // Get questions
       const questionsResponse = await getQuestions(quizId!);
       const formattedQuestions = questionsResponse.data.map((q: any) => ({
         ...q,
@@ -99,7 +91,6 @@ const QuizPlay = () => {
       }));
       setQuestions(formattedQuestions);
       
-      // Record start time
       setStartTime(Date.now());
     } catch (error) {
       console.error("Error loading quiz data:", error);
@@ -115,19 +106,15 @@ const QuizPlay = () => {
   };
   
   const startTimer = () => {
-    // Clear any existing timer
     if (timerRef.current) {
       window.clearInterval(timerRef.current);
     }
     
-    // Set initial time
     setTimeLeft(currentQuestion.time_limit);
     
-    // Start new timer
     timerRef.current = window.setInterval(() => {
       setTimeLeft((prevTime) => {
         if (prevTime <= 1) {
-          // Time's up, submit answer automatically
           if (timerRef.current) {
             window.clearInterval(timerRef.current);
           }
@@ -148,7 +135,6 @@ const QuizPlay = () => {
   };
   
   const handleAnswerSubmit = async (optionIndex: number | null) => {
-    // Clear timer
     if (timerRef.current) {
       window.clearInterval(timerRef.current);
     }
@@ -157,7 +143,6 @@ const QuizPlay = () => {
     setSelectedOption(optionIndex);
     
     try {
-      // Submit answer to backend
       const answerData = {
         selected_option: optionIndex !== null ? optionIndex : -1
       };
@@ -168,10 +153,8 @@ const QuizPlay = () => {
         answerData
       );
       
-      // Update score
       setScore(response.newScore);
       
-      // Save answer for review
       setAnswers([
         ...answers,
         {
@@ -182,14 +165,12 @@ const QuizPlay = () => {
         }
       ]);
       
-      // Wait before moving to next question
       setTimeout(() => {
         if (currentQuestionIndex < questions.length - 1) {
           setCurrentQuestionIndex(prevIndex => prevIndex + 1);
           setSelectedOption(null);
           setIsAnswerSubmitted(false);
         } else {
-          // Quiz completed
           finishQuiz();
         }
       }, 2000);
@@ -207,26 +188,20 @@ const QuizPlay = () => {
     setQuizCompleted(true);
     
     try {
-      // Calculate completion time in seconds
       const completionTime = Math.floor((Date.now() - startTime) / 1000);
       
-      // Update participant with completion time
       await updateParticipant(participantData.id, {
         completion_time: completionTime
       });
       
-      // Get leaderboard
       const leaderboardResponse = await getLeaderboard(quizId!);
       setLeaderboard(leaderboardResponse.data);
       
-      // Find player's rank
       const rank = leaderboardResponse.data.findIndex(p => p.id === participantData.id) + 1;
       setPlayerRank(rank);
       
-      // Get detailed answers if needed
       const answersResponse = await getAnswers(participantData.id);
       
-      // Clear participant data from local storage
       localStorage.removeItem('participant');
     } catch (error) {
       console.error("Error finishing quiz:", error);
@@ -265,7 +240,6 @@ const QuizPlay = () => {
       <div className="flex-1 container mx-auto px-4 py-8">
         {!quizCompleted ? (
           <div className="neo-card max-w-3xl mx-auto">
-            {/* Question header */}
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold">
                 Pertanyaan {currentQuestionIndex + 1} dari {questions.length}
@@ -276,7 +250,6 @@ const QuizPlay = () => {
               </div>
             </div>
             
-            {/* Question */}
             <div className="mb-8">
               <h3 className="text-2xl font-bold mb-4">{currentQuestion.question_text}</h3>
               
@@ -291,7 +264,6 @@ const QuizPlay = () => {
               )}
             </div>
             
-            {/* Options */}
             <div className="grid grid-cols-1 gap-4">
               {currentQuestion.options.map((option, index) => {
                 let optionClass = "p-4 border-4 border-black cursor-pointer transition-all";
@@ -334,7 +306,6 @@ const QuizPlay = () => {
               })}
             </div>
             
-            {/* Submit button */}
             {!isAnswerSubmitted && (
               <div className="mt-8 flex justify-end">
                 <Button
@@ -347,7 +318,6 @@ const QuizPlay = () => {
               </div>
             )}
             
-            {/* Feedback message */}
             {isAnswerSubmitted && (
               <div className={`mt-6 p-4 flex items-center gap-3 border-4 ${
                 selectedOption !== null && currentQuestion.correct_option === selectedOption
@@ -379,13 +349,11 @@ const QuizPlay = () => {
             <div className="neo-card mb-8">
               <h1 className="text-3xl font-bold mb-2">Kuis Selesai!</h1>
               <p className="text-xl mb-6">Terima kasih telah berpartisipasi, {playerName}!</p>
-              
               <div className="text-center p-6 mb-6 border-4 border-black bg-white">
                 <h2 className="text-2xl font-bold mb-2">Skor Akhir</h2>
                 <p className="text-5xl font-bold text-neo-blue">{score}</p>
                 <p className="mt-2">Peringkat: #{playerRank} dari {leaderboard.length + 1} peserta</p>
               </div>
-              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
                   <h2 className="text-xl font-bold mb-4 border-b-4 border-black pb-2">Jawaban Kamu</h2>
@@ -438,6 +406,7 @@ const QuizPlay = () => {
                           <span>{player.name}</span>
                         </div>
                         <span className="font-bold">{player.score}</span>
+                        <span className="ml-6">{player.completion_time ?? '-' } detik</span>
                       </div>
                     ))}
                     
@@ -448,6 +417,7 @@ const QuizPlay = () => {
                           <span>{playerName} (Kamu)</span>
                         </div>
                         <span className="font-bold">{score}</span>
+                        <span className="ml-6">{leaderboard.find(p => p.id === participantData.id)?.completion_time ?? '-'} detik</span>
                       </div>
                     )}
                   </div>
