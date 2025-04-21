@@ -115,7 +115,9 @@ const AdminDashboard = () => {
       setLoading(true);
       const data = await getQuizzes();
       setQuizzes(data.data || []);
-      fetchQuizStats(data.data || []);
+      if (data.data) {
+        fetchQuizStats(data.data);
+      }
     } catch (error) {
       console.error("Error fetching quizzes:", error);
       toast({
@@ -138,6 +140,7 @@ const AdminDashboard = () => {
         ]);
         return {
           quizId: quiz.id,
+          quizTitle: quiz.title,
           numQuestions: questionsRes.data.length,
           numParticipants: participantsRes.data.length,
           leaderboard: leaderboardRes.data,
@@ -155,7 +158,7 @@ const AdminDashboard = () => {
     );
     setQuizStats(stats);
     setParticipantsStats(stats.map((s, index) => ({
-      quizTitle: quizzes.find(q => q.id === s.quizId)?.title || "Tidak ada judul",
+      quizTitle: s.quizTitle,
       jumlahPeserta: s.numParticipants,
       rata2Waktu: s.avgTime,
       quizId: s.quizId,
