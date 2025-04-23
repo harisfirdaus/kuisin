@@ -242,28 +242,44 @@ const CreateQuiz = () => {
           if (question.id) {
             await updateQuestion(question.id, questionData);
           } else {
-            console.log('Data pertanyaan yang akan dikirim:', {
+            // Log data sebelum dikirim
+            const questionDataToLog = {
               quizId: savedQuizId,
               questionData: {
                 ...questionData,
-                options: JSON.parse(questionData.options) // Parse untuk logging yang lebih jelas
+                options: JSON.parse(questionData.options)
               }
-            });
-            
-            const response = await createQuestion(savedQuizId!, questionData);
-            
-            if (!response.data || !response.data[0]) {
-              throw new Error(`Gagal membuat pertanyaan ${index + 1}: Tidak ada data yang dikembalikan`);
+            };
+            console.log('Data pertanyaan yang akan dikirim:', questionDataToLog);
+
+            try {
+              const response = await createQuestion(savedQuizId!, questionData);
+              console.log('Response dari server:', response);
+              
+              if (!response.data || !response.data[0]) {
+                throw new Error(`Gagal membuat pertanyaan ${index + 1}: Tidak ada data yang dikembalikan`);
+              }
+              
+              // Update state dengan ID baru
+              question.id = response.data[0].id;
+              question.quiz_id = savedQuizId;
+            } catch (createError) {
+              console.error('Error saat membuat pertanyaan:', {
+                error: createError,
+                requestData: questionDataToLog,
+                stack: createError.stack
+              });
+              throw createError;
             }
-            
-            // Update state dengan ID baru
-            question.id = response.data[0].id;
-            question.quiz_id = savedQuizId;
           }
         } catch (error) {
           console.error(`Error detail pada pertanyaan ${index + 1}:`, {
-            error,
-            questionData,
+            error: error.message,
+            stack: error.stack,
+            questionData: {
+              ...questionData,
+              options: JSON.parse(questionData.options)
+            },
             quizId: savedQuizId
           });
           toast({
