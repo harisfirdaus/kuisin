@@ -101,23 +101,46 @@ export const getQuestions = async (quizId: string) => {
 };
 
 export const createQuestion = async (quizId: string, questionData: any) => {
-  console.log('Mengirim request ke server:', {
+  // Pastikan data yang dikirim sudah benar
+  const sanitizedData = {
+    ...questionData,
+    options: typeof questionData.options === 'string' 
+      ? questionData.options 
+      : JSON.stringify(questionData.options),
+    question_text: questionData.question_text?.trim() || '',
+    media_url: questionData.media_url?.trim() || '',
+    points: Number(questionData.points) || 10,
+    correct_option: Number(questionData.correct_option) || 0,
+    time_limit: Number(questionData.time_limit) || 30
+  };
+
+  console.log('Data yang akan dikirim ke server:', {
     quizId,
     questionData: {
-      ...questionData,
-      options: JSON.parse(questionData.options) // Parse untuk logging yang lebih jelas
+      ...sanitizedData,
+      options: JSON.parse(sanitizedData.options) // Parse untuk logging yang lebih jelas
     }
   });
 
   try {
     const response = await supabase.functions.invoke('questions', {
-      body: { action: 'create', quizId, questionData },
+      body: { 
+        action: 'create', 
+        quizId, 
+        questionData: sanitizedData 
+      },
     });
 
-    console.log('Response dari server:', response);
+    console.log('Response dari server:', {
+      data: response.data,
+      error: response.error
+    });
 
     if (response.error) {
-      console.error('Error dari server:', response.error);
+      console.error('Error dari server:', {
+        message: response.error.message,
+        details: response.error
+      });
       throw new Error(response.error.message || 'Terjadi kesalahan saat membuat pertanyaan');
     }
 
@@ -129,12 +152,13 @@ export const createQuestion = async (quizId: string, questionData: any) => {
     return response.data;
   } catch (error) {
     console.error('Error dalam createQuestion:', {
-      error,
+      error: error.message,
+      stack: error.stack,
       requestData: {
         quizId,
         questionData: {
-          ...questionData,
-          options: JSON.parse(questionData.options)
+          ...sanitizedData,
+          options: JSON.parse(sanitizedData.options)
         }
       }
     });
