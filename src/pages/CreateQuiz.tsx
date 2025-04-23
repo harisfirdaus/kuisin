@@ -242,6 +242,14 @@ const CreateQuiz = () => {
           if (question.id) {
             await updateQuestion(question.id, questionData);
           } else {
+            console.log('Data pertanyaan yang akan dikirim:', {
+              quizId: savedQuizId,
+              questionData: {
+                ...questionData,
+                options: JSON.parse(questionData.options) // Parse untuk logging yang lebih jelas
+              }
+            });
+            
             const response = await createQuestion(savedQuizId!, questionData);
             
             if (!response.data || !response.data[0]) {
@@ -253,13 +261,17 @@ const CreateQuiz = () => {
             question.quiz_id = savedQuizId;
           }
         } catch (error) {
-          console.error(`Error pada pertanyaan ${index + 1}:`, error);
+          console.error(`Error detail pada pertanyaan ${index + 1}:`, {
+            error,
+            questionData,
+            quizId: savedQuizId
+          });
           toast({
             variant: "destructive",
             title: "Error",
             description: `Gagal menyimpan pertanyaan ${index + 1}: ${error.message}`,
           });
-          throw error; // Re-throw untuk menangani di level atas
+          throw error;
         }
       }
       
