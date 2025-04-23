@@ -155,75 +155,84 @@ const CreateQuiz = () => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    if (!title) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Judul kuis harus diisi",
-      });
-      setIsSubmitting(false);
-      return;
-    }
-    
-    for (const [index, question] of questions.entries()) {
-      if (!question.question_text) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: `Pertanyaan ${index + 1} harus diisi`,
-        });
-        setIsSubmitting(false);
-        return;
-      }
-      
-      const allOptionsHaveText = question.options.every(o => o.text.trim() !== "");
-      
-      if (!allOptionsHaveText) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: `Semua opsi jawaban di pertanyaan ${index + 1} harus diisi`,
-        });
-        setIsSubmitting(false);
-        return;
-      }
-    }
-    
     try {
-      const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}');
+      // Validasi dasar
+      if (!title) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Judul kuis harus diisi",
+        });
+        return;
+      }
       
+      // Validasi pertanyaan
+      for (const [index, question] of questions.entries()) {
+        if (!question.question_text.trim()) {
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: `Pertanyaan ${index + 1} harus diisi`,
+          });
+          return;
+        }
+        
+        const allOptionsHaveText = question.options.every(o => o.text.trim() !== "");
+        if (!allOptionsHaveText) {
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: `Semua opsi jawaban di pertanyaan ${index + 1} harus diisi`,
+          });
+          return;
+        }
+
+        // Validasi opsi jawaban yang benar
+        if (question.correct_option < 0 || question.correct_option >= question.options.length) {
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: `Pilih jawaban yang benar untuk pertanyaan ${index + 1}`,
+          });
+          return;
+        }
+      }
+      
+      const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}');
       if (!adminUser.id) {
         throw new Error("User ID tidak ditemukan. Silakan login kembali.");
       }
       
       let savedQuizId = quizId;
       
+      // Persiapkan data kuis
+      const quizData = {
+        title: title.trim(),
+        description: description.trim(),
+        duration_per_question: parseInt(timePerQuestion),
+        default_points: parseInt(defaultPoints),
+      };
+
+      // Buat atau update kuis
       if (!quizId) {
-        const quizData = {
-          title,
-          description,
-          duration_per_question: parseInt(timePerQuestion),
-          default_points: parseInt(defaultPoints),
-        };
-        
         const response = await createQuiz(quizData, adminUser.id);
+        if (!response.data || !response.data[0]) {
+          throw new Error('Gagal membuat kuis: Tidak ada data yang dikembalikan');
+        }
         savedQuizId = response.data[0].id;
       } else {
-        const quizData = {
-          title,
-          description,
-          duration_per_question: parseInt(timePerQuestion),
-          default_points: parseInt(defaultPoints),
-        };
-        
         await updateQuiz(quizId, quizData);
       }
       
-      for (const question of questions) {
+      // Proses setiap pertanyaan
+      for (const [index, question] of questions.entries()) {
         const questionData = {
-          question_text: question.question_text,
-          media_url: question.media_url,
-          options: JSON.stringify(question.options),
+          question_text: question.question_text.trim(),
+          media_url: question.media_url.trim(),
+          options: JSON.stringify(question.options.map(opt => ({
+            text: opt.text.trim(),
+            id: opt.id
+          }))),
           correct_option: question.correct_option,
           points: question.points,
           time_limit: parseInt(timePerQuestion)
@@ -233,59 +242,39 @@ const CreateQuiz = () => {
           if (question.id) {
             await updateQuestion(question.id, questionData);
           } else {
-            console.log('Sending new question data:', questionData);
             const response = await createQuestion(savedQuizId!, questionData);
-            console.log('Create question response:', response);
             
             if (!response.data || !response.data[0]) {
-              throw new Error('Failed to create question: No data returned');
+              throw new Error(`Gagal membuat pertanyaan ${index + 1}: Tidak ada data yang dikembalikan`);
             }
             
-            // Update the question in state with the new ID
+            // Update state dengan ID baru
             question.id = response.data[0].id;
             question.quiz_id = savedQuizId;
           }
         } catch (error) {
-          console.error('Error handling question:', error);
+          console.error(`Error pada pertanyaan ${index + 1}:`, error);
           toast({
             variant: "destructive",
             title: "Error",
-            description: `Gagal ${question.id ? 'memperbarui' : 'membuat'} pertanyaan. ${error.message}`,
+            description: `Gagal menyimpan pertanyaan ${index + 1}: ${error.message}`,
           });
-          setIsSubmitting(false);
-          return;
-        }
-      }
-      
-      if (quizId) {
-        const originalQuiz = await getQuiz(quizId);
-        const originalQuestions = originalQuiz.data.questions || [];
-        
-        const currentQuestionIds = questions
-          .filter(q => q.id)
-          .map(q => q.id);
-          
-        for (const origQuestion of originalQuestions) {
-          if (!currentQuestionIds.includes(origQuestion.id)) {
-            await deleteQuestion(origQuestion.id);
-          }
+          throw error; // Re-throw untuk menangani di level atas
         }
       }
       
       toast({
-        title: quizId ? "Kuis Diperbarui" : "Kuis Dibuat",
-        description: quizId 
-          ? "Kuis berhasil diperbarui." 
-          : "Kuis baru berhasil dibuat.",
+        title: "Sukses",
+        description: "Kuis berhasil disimpan",
       });
       
-      navigate("/admin/dashboard");
+      navigate('/admin/dashboard');
     } catch (error) {
-      console.error("Error saving quiz:", error);
+      console.error('Error dalam handleSubmit:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Gagal menyimpan kuis. Silakan coba lagi.",
+        description: error.message || "Terjadi kesalahan saat menyimpan kuis",
       });
     } finally {
       setIsSubmitting(false);
