@@ -101,15 +101,45 @@ export const getQuestions = async (quizId: string) => {
 };
 
 export const createQuestion = async (quizId: string, questionData: any) => {
-  const response = await supabase.functions.invoke('questions', {
-    body: { action: 'create', quizId, questionData },
+  console.log('Mengirim request ke server:', {
+    quizId,
+    questionData: {
+      ...questionData,
+      options: JSON.parse(questionData.options) // Parse untuk logging yang lebih jelas
+    }
   });
 
-  if (response.error) {
-    throw new Error(response.error.message);
-  }
+  try {
+    const response = await supabase.functions.invoke('questions', {
+      body: { action: 'create', quizId, questionData },
+    });
 
-  return response.data;
+    console.log('Response dari server:', response);
+
+    if (response.error) {
+      console.error('Error dari server:', response.error);
+      throw new Error(response.error.message || 'Terjadi kesalahan saat membuat pertanyaan');
+    }
+
+    if (!response.data) {
+      console.error('Tidak ada data yang dikembalikan dari server');
+      throw new Error('Tidak ada data yang dikembalikan dari server');
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error('Error dalam createQuestion:', {
+      error,
+      requestData: {
+        quizId,
+        questionData: {
+          ...questionData,
+          options: JSON.parse(questionData.options)
+        }
+      }
+    });
+    throw error;
+  }
 };
 
 export const updateQuestion = async (questionId: string, questionData: any) => {
